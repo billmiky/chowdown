@@ -6,8 +6,7 @@ layout: default
   
   <div class="split-image-container">
     
-    <div class="image-div" style="background-image: url('{{ site.baseurl }}/images/{{ page.image }}');"></div>
-    
+<div class="image-div" style="background-image: url('{{ "/images/" | append: page.image | relative_url }}');"></div>    
     {% unless page.image %}
       <div class="no-image-msg">
         NO IMAGE FOUND<br>
