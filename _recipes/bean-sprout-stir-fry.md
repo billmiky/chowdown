@@ -2,7 +2,7 @@
 
 layout: recipe
 title:  "Bean Sprout Stir Fry"
-image: bean-sprout-stir-fry.jpg
+image: /images/bean-sprout-stir-fry.jpg
 
 tags:
 - mains
