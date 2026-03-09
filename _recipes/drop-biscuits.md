@@ -1,4 +1,5 @@
 ---
+
 layout: recipe
 title: "Quick and Easy Drop Biscuits"
 image: drop-biscuit.jpg
@@ -9,26 +10,21 @@ tags:
 - breakfast
 
 ingredients:
-- 2 cups all-purpose flour
-- 1 tablespoon baking powder
-- 1 teaspoon granulated sugar (optional)
-- 3/4 teaspoon salt
-- 6 tablespoons cold unsalted butter, cut into small pieces
-- 3/4 to 1 cup milk or buttermilk
+- 1 1/2 cups all-purpose flour (6.6 ounces; 190 g)
+- 2 teaspoons baking powder
+- 1 teaspoon (4 g) Diamond Crystal kosher salt; for table salt use half as much by volume or the same weight
+- 4 ounces cold unsalted butter (1 stick; 115 g), cut into 1/4-inch cubes and refrigerated
+- 3/4 cup (180 ml) whole milk
 
 directions:
-- Preheat oven to 450°F (230°C). Line a baking sheet with parchment.
-- Whisk together flour, baking powder, sugar, and salt in a large bowl.
-- Cut in cold butter with a pastry cutter or fork until mixture resembles coarse crumbs with some pea-sized pieces.
-- Pour in 3/4 cup milk and stir gently until a soft, slightly sticky dough forms; add more milk a tablespoon at a time if too dry.
-- Use a spoon or ice cream scoop to drop mounds of dough (about 2 tablespoons each) onto the prepared baking sheet, spacing about 1–2 inches apart.
-- Bake 10–12 minutes, or until tops are golden brown and biscuits are cooked through.
-- Serve warm with butter, jam, or gravy.
-
-notes:
-- For richer flavor, use buttermilk instead of milk.
-- Keep dough handling light for tender biscuits; don't overmix.
-- Leftovers store in an airtight container for 2 days; reheat briefly in the oven.
+- Preheat oven to 400°F (200°C) and line a baking sheet with parchment paper; alternatively, grease the baking sheet with butter.
+- In a large bowl, whisk together flour, baking powder, and salt.
+- Toss butter into dry ingredients until coated with flour. Working quickly, using your fingers or a pastry blender, rub or cut butter into flour until it resembles coarse meal. Alternatively, add flour mixture and butter to the bowl of a food processor and pulse 2 to 3 times to form pea-sized pieces; transfer to a large bowl.
+- Add milk and stir with a fork until the mixture just comes together into a slightly sticky, shaggy dough.
+- For small biscuits, use a teaspoon or a small cookie scoop to mound walnut-sized balls of dough onto the prepared baking sheet. For large biscuits, use a 1/4-cup measuring cup to mound balls of dough onto the prepared baking sheet.
+- Bake biscuits until golden brown, about 15 minutes for small biscuits and 20 minutes for large ones. Let cool slightly, then transfer to a wire rack. Serve warm or at room temperature.
 
 ---
-Inspired by a quick drop-biscuit method.
+
+notes:
+- These biscuits are best eaten the day they are made. For longer storage, store in an airtight container and reheat in a 350°F (175°C) oven for 5 to 8 minutes.
