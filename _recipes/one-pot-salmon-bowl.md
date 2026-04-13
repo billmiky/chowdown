@@ -1,7 +1,7 @@
 ---
 layout: recipe
 title: "One-Pot Salmon, Spinach and Lentil Salad"
-image: "https://static01.nyt.com/images/2021/01/20/dining/19Appetite-Salmon/19Appetite-Salmon-articleLarge.jpg"
+image: one-pot-salmon-bowl.jpg
 ingredients:
   - 4 (6-ounce) skin-on salmon fillets
   - Kosher salt and black pepper

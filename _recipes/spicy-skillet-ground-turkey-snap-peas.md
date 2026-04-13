@@ -1,7 +1,7 @@
 ---
 layout: recipe
 title: "Spicy Skillet Ground Turkey & Snap Peas"
-image: /images/spicy-skillet-ground-turkey-snap-peas.png
+image: skillet-ground-turkey-snap-peas.png
 tags: [Turkey, Stovetop, Spicy, Quick, Gluten-Free]
 ingredients:
 - 3 tbsp olive oil

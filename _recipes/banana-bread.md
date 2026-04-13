@@ -2,7 +2,7 @@
 
 layout: recipe
 title:  "Banana Bread"
-image: /images/banana-bread.jpg
+image: banana-bread.jpg
 imagecredit: https://flic.kr/p/7HZmzn
 
 tags:
