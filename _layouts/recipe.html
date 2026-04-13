@@ -34,7 +34,9 @@ layout: default
       </div>
 
       {% if page.ingredients %}
-      <div class="recipe-section">
+      <script id="ingredients-data" type="application/json">{{ page.ingredients | jsonify }}</script>
+      <button id="cooking-mode-btn" onclick="toggleCookingMode()">COOKING MODE</button>
+      <div id="ingredients-section" class="recipe-section">
         <h2>Ingredients</h2>
         <ul>
           {% for ingredient in page.ingredients %}
@@ -48,13 +50,13 @@ layout: default
       {% endif %}
 
       {% if page.directions %}
-      <div class="recipe-section">
+      <div id="directions-section" class="recipe-section">
         <h2>Directions</h2>
         <ol>
           {% for direction in page.directions %}
             <li>
               <input type="checkbox">
-              <span>{{ direction }}</span>
+              <span class="direction-text">{{ direction }}</span>
             </li>
           {% endfor %}
         </ol>
@@ -203,4 +205,108 @@ layout: default
   input[type="checkbox"]:checked {
     background-color: #E63946;
   }
+
+  #cooking-mode-btn {
+    display: inline-block;
+    margin: 30px 0 10px;
+    padding: 14px 28px;
+    background: #000;
+    color: #fff;
+    font-family: 'Jost', sans-serif;
+    font-size: 1rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    border: 3px solid #000;
+    box-shadow: 6px 6px 0px 0px #E63946;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+  }
+
+  #cooking-mode-btn.active {
+    background: #E63946;
+    color: #fff;
+    border-color: #E63946;
+    box-shadow: 6px 6px 0px 0px #000;
+  }
+
+  #cooking-mode-btn:hover {
+    background: #E63946;
+    color: #fff;
+    border-color: #E63946;
+  }
+
+  .cooking-ingredient {
+    background: #E63946;
+    color: #fff;
+    padding: 1px 5px;
+    font-weight: 700;
+    border-radius: 2px;
+    white-space: nowrap;
+  }
 </style>
+
+<script>
+function parseIngredientName(ingredientStr) {
+  const units = ['cups?','tbsp','tablespoons?','tsp','teaspoons?','fl oz','oz','ounces?','lbs?','pounds?','grams?','\\bg\\b','kg','ml','liters?','litres?','pinch(?:es)?','dash(?:es)?','handful','cloves?','cans?','slices?','bunches?','heads?','medium','large','small','pieces?','sprigs?','stalks?','inches?','inch'];
+  const unitRe = new RegExp('^(?:' + units.join('|') + ')\\s+', 'i');
+  const numRe = /^[\d\s\u00BC-\u00BE\u2150-\u215E\/\.\-]+/;
+  let name = ingredientStr.trim();
+  name = name.replace(numRe, '').trim();
+  name = name.replace(unitRe, '').trim();
+  name = name.replace(/\(.*?\)/g, '').trim();
+  return name;
+}
+
+var _originalDirections = null;
+
+function toggleCookingMode() {
+  var btn = document.getElementById('cooking-mode-btn');
+  var ingSection = document.getElementById('ingredients-section');
+  var dataEl = document.getElementById('ingredients-data');
+  if (!btn || !ingSection || !dataEl) return;
+
+  var isActive = btn.classList.toggle('active');
+
+  if (isActive) {
+    btn.textContent = 'EXIT COOKING MODE';
+    ingSection.style.display = 'none';
+    applyIngredientsToDirections(JSON.parse(dataEl.textContent));
+  } else {
+    btn.textContent = 'COOKING MODE';
+    ingSection.style.display = '';
+    restoreDirections();
+  }
+}
+
+function applyIngredientsToDirections(ingredients) {
+  var spans = document.querySelectorAll('#directions-section .direction-text');
+  _originalDirections = [];
+
+  // Build ingredient list sorted longest name first to avoid partial overlaps
+  var parsed = ingredients.map(function(ing) {
+    return { full: ing, name: parseIngredientName(ing) };
+  }).filter(function(i) { return i.name.length > 2; });
+  parsed.sort(function(a, b) { return b.name.length - a.name.length; });
+
+  spans.forEach(function(span) {
+    _originalDirections.push(span.innerHTML);
+    var html = span.innerHTML;
+    parsed.forEach(function(item) {
+      var escaped = item.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      var re = new RegExp('\\b(' + escaped + ')\\b', 'gi');
+      html = html.replace(re, '<mark class="cooking-ingredient" title="' + item.full.replace(/"/g, '&quot;') + '">' + item.full + '</mark>');
+    });
+    span.innerHTML = html;
+  });
+}
+
+function restoreDirections() {
+  if (!_originalDirections) return;
+  var spans = document.querySelectorAll('#directions-section .direction-text');
+  spans.forEach(function(span, i) {
+    span.innerHTML = _originalDirections[i];
+  });
+  _originalDirections = null;
+}
+</script>
