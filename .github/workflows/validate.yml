@@ -1,0 +1,28 @@
+name: Validate recipes
+
+on:
+  pull_request:
+  push:
+    branches-ignore: ["main", "master"]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Check recipe front matter
+        run: |
+          pip install pyyaml
+          python tools/validate_recipes.py
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.1"
+          bundler-cache: true
+      - name: Jekyll build
+        run: bundle exec jekyll build
