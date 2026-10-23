@@ -2,46 +2,45 @@
 layout: default
 ---
 
+{% assign _slug = page.path | remove: "_recipes/" | remove: ".md" %}
+{% assign _rating = page.rating | plus: 0 %}
+
+<a href="{{ '/' | relative_url }}" class="back-btn" id="back-btn">
+  <span aria-hidden="true">←</span> Recipes
+</a>
+
 <div class="bauhaus-split-layout">
-  
+
   <div class="split-image-container">
-    
-<div class="image-div" style="background-image: url('{{ "/images/" | append: page.image | relative_url }}');"></div>    
-    {% unless page.image %}
-      <div class="no-image-msg">
-        NO IMAGE FOUND<br>
-        (Make sure file is in /images/ folder)
-      </div>
-    {% endunless %}
+    {% if page.image %}
+      <img class="recipe-image" src="{{ '/images/' | append: page.image | relative_url }}" alt="{{ page.title | escape }}" fetchpriority="high">
+    {% else %}
+      <div class="no-image-msg" aria-hidden="true"></div>
+    {% endif %}
   </div>
 
   <div class="split-content-container">
     <div class="content-padding">
-      
+
       <h1 class="recipe-title">{{ page.title }}</h1>
-      
+
       <div class="recipe-meta">
-        {% if page.total_time %}
-          <div class="meta-chip">
-            <span class="meta-chip-label">Total</span>
-            <span class="meta-chip-value">{{ page.total_time }}</span>
-          </div>
-        {% elsif page.cook_time %}
-          <div class="meta-chip">
-            <span class="meta-chip-label">Cook</span>
-            <span class="meta-chip-value">{{ page.cook_time }}</span>
-          </div>
-        {% endif %}
         {% if page.prep_time %}
           <div class="meta-chip">
             <span class="meta-chip-label">Prep</span>
-            <span class="meta-chip-value">{{ page.prep_time }}</span>
+            <span class="meta-chip-value">{% include minutes.html m=page.prep_time %}</span>
           </div>
         {% endif %}
-        {% if page.yield %}
+        {% if page.cook_time %}
           <div class="meta-chip">
-            <span class="meta-chip-label">Serves</span>
-            <span class="meta-chip-value">{{ page.yield }}</span>
+            <span class="meta-chip-label">Cook</span>
+            <span class="meta-chip-value">{% include minutes.html m=page.cook_time %}</span>
+          </div>
+        {% endif %}
+        {% if page.total_time %}
+          <div class="meta-chip">
+            <span class="meta-chip-label">Total</span>
+            <span class="meta-chip-value">{% include minutes.html m=page.total_time %}</span>
           </div>
         {% endif %}
         {% if page.difficulty %}
@@ -52,6 +51,7 @@ layout: default
         {% endif %}
         {% if page.kid_friendly == true or page.kid_friendly == "true" %}
           <div class="meta-chip kid">
+            <span class="meta-chip-label">Family</span>
             <span class="meta-chip-value">Kid-friendly</span>
           </div>
         {% endif %}
@@ -61,661 +61,907 @@ layout: default
             <span class="meta-chip-value">{{ page.season | join: ", " }}</span>
           </div>
         {% endif %}
-        {% if page.rating %}
-          <div class="meta-chip rating" id="rating-chip">
-            <span class="meta-chip-label">Rating</span>
-            <span class="star-widget" id="star-widget" data-current="{{ page.rating }}">
-              {% for i in (1..5) %}
-                <span class="star {% if i <= page.rating %}filled{% endif %}" data-val="{{ i }}">★</span>
-              {% endfor %}
-            </span>
-          </div>
-        {% else %}
-          <div class="meta-chip rating" id="rating-chip">
-            <span class="meta-chip-label">Rate this</span>
-            <span class="star-widget" id="star-widget" data-current="0">
-              {% for i in (1..5) %}
-                <span class="star" data-val="{{ i }}">★</span>
-              {% endfor %}
-            </span>
-          </div>
-        {% endif %}
-        {% if page.last_made and page.last_made != "" and page.last_made != nil %}
-          <div class="meta-chip last-made-chip">
-            <span class="meta-chip-label">Last made</span>
-            <span class="meta-chip-value" id="last-made-val" data-date="{{ page.last_made }}">{{ page.last_made }}</span>
-          </div>
-        {% endif %}
+        <div class="meta-chip rating">
+          <span class="meta-chip-label" id="rating-label">{% if _rating > 0 %}Rating{% else %}Rate this{% endif %}</span>
+          <span class="star-widget" id="star-widget" role="group" aria-labelledby="rating-label" data-current="{{ _rating }}">
+            {% for i in (1..5) %}
+              <button type="button" class="star{% if i <= _rating %} filled{% endif %}" data-val="{{ i }}" aria-label="{{ i }} star{% if i > 1 %}s{% endif %}" aria-pressed="{% if i == _rating %}true{% else %}false{% endif %}">★</button>
+            {% endfor %}
+          </span>
+        </div>
+        <div class="meta-chip last-made-chip"{% unless page.last_made %} hidden{% endunless %} id="last-made-chip">
+          <span class="meta-chip-label">Last made</span>
+          <span class="meta-chip-value" id="last-made-val" data-date="{{ page.last_made }}">{{ page.last_made }}</span>
+        </div>
       </div>
+
       {% if page.tags and page.tags.size > 0 %}
       <div class="recipe-tags">
         {% for tag in page.tags %}
-          <span class="recipe-tag">{{ tag }}</span>
+          <a class="recipe-tag" href="{{ '/' | relative_url }}?q={{ tag | url_encode }}">{{ tag }}</a>
         {% endfor %}
       </div>
       {% endif %}
-      
+
+      {% assign _intro = content | strip %}
+      {% if _intro != "" %}
       <div class="recipe-intro">
         {{ content }}
       </div>
+      {% endif %}
+
+      {% if page.ingredients or page.directions %}
+      <div class="cook-toolbar">
+        {% if page.directions %}
+        <button type="button" id="cooking-mode-btn" class="bauhaus-btn" aria-pressed="false">Start Cooking</button>
+        {% endif %}
+        {% if page.ingredients %}
+        <div class="servings" id="servings" data-yield="{{ page.yield | escape }}">
+          <span class="servings-label">{% if page.yield %}Makes{% else %}Scale{% endif %}</span>
+          <button type="button" class="servings-btn" data-step="-1" aria-label="Fewer">−</button>
+          <output class="servings-value" id="servings-value" aria-live="polite">{{ page.yield | default: "×1" }}</output>
+          <button type="button" class="servings-btn" data-step="1" aria-label="More">+</button>
+        </div>
+        {% endif %}
+      </div>
+      {% endif %}
 
       {% if page.ingredients %}
-      <script id="ingredients-data" type="application/json">{{ page.ingredients | jsonify }}</script>
-      <button id="cooking-mode-btn" onclick="toggleCookingMode()">COOKING MODE</button>
-      <div id="ingredients-section" class="recipe-section">
-        <h2>Ingredients</h2>
-        <ul>
+      <section id="ingredients-section" class="recipe-section">
+        <div class="section-head">
+          <h2>Ingredients</h2>
+          <button type="button" class="reset-checks" hidden>Clear checks</button>
+        </div>
+        <ul class="check-list" id="ingredient-list">
           {% for ingredient in page.ingredients %}
             <li>
-              <input type="checkbox">
-              <span>{{ ingredient }}</span>
+              <label>
+                <input type="checkbox">
+                <span class="ingredient-text" data-orig="{{ ingredient | escape }}">{{ ingredient }}</span>
+              </label>
             </li>
           {% endfor %}
         </ul>
-      </div>
+        <p class="scale-note" id="scale-note" hidden>Amounts mentioned inside the directions aren't scaled.</p>
+      </section>
       {% endif %}
 
       {% if page.directions %}
-      <div id="directions-section" class="recipe-section">
-        <h2>Directions</h2>
-        <ol>
+      <section id="directions-section" class="recipe-section">
+        <div class="section-head">
+          <h2>Directions</h2>
+        </div>
+        <ol class="check-list steps" id="direction-list">
           {% for direction in page.directions %}
             <li>
-              <input type="checkbox">
-              <span class="direction-text">{{ direction }}</span>
+              <label>
+                <input type="checkbox">
+                <span class="step-num" aria-hidden="true">{{ forloop.index }}</span>
+                <span class="direction-text">{{ direction }}</span>
+              </label>
             </li>
           {% endfor %}
         </ol>
-      </div>
+      </section>
       {% endif %}
 
       <div class="planner-actions">
-        <button class="planner-btn plan-btn" id="plan-btn" onclick="toggleDayPicker()">+ Make This Week</button>
-        <button class="planner-btn made-btn" onclick="logMade()">✓ We Made This</button>
-        <span id="planner-msg" class="planner-msg"></span>
+        <button type="button" class="bauhaus-btn" id="plan-btn" aria-expanded="false" aria-controls="day-picker">+ Add to Plan</button>
+        <button type="button" class="bauhaus-btn ghost" id="made-btn">✓ We Made This</button>
+        <span id="planner-msg" class="action-status" role="status"></span>
       </div>
-      <div class="day-picker" id="day-picker">
-        <span class="day-picker-label">Pick a day:</span>
-        <button class="day-btn" onclick="addToDay('monday')">Mon</button>
-        <button class="day-btn" onclick="addToDay('tuesday')">Tue</button>
-        <button class="day-btn" onclick="addToDay('wednesday')">Wed</button>
-        <button class="day-btn" onclick="addToDay('thursday')">Thu</button>
-        <button class="day-btn" onclick="addToDay('friday')">Fri</button>
-        <button class="day-btn" onclick="addToDay('saturday')">Sat</button>
-        <button class="day-btn" onclick="addToDay('sunday')">Sun</button>
-        <button class="day-btn cancel-btn" onclick="toggleDayPicker()">✕</button>
+      <div class="day-picker" id="day-picker" hidden>
+        <span class="day-picker-label">Pick a day this week</span>
+        <div class="day-picker-days" id="day-picker-days"></div>
       </div>
-      
-      <div style="height: 150px;"></div>
+
     </div>
   </div>
 
 </div>
 
 <style>
-  /* --- GLOBAL RESET --- */
-  body, html {
-    margin: 0;
-    padding: 0;
-    width: 100%;
-    background-color: #fff;
+  body { background: var(--card); }
+
+  /* ---- Back button ---- */
+  .back-btn {
+    position: fixed;
+    top: 16px;
+    left: 16px;
+    z-index: 30;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 40px;
+    padding: 8px 14px;
+    background: var(--ink);
+    color: #fff;
+    border: 3px solid var(--ink);
+    box-shadow: 4px 4px 0 0 var(--red);
+    font-size: 0.75rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    text-decoration: none;
+    transition: background 0.15s, box-shadow 0.15s;
   }
 
-  /* --- DESKTOP LAYOUT (Split Screen) --- */
-  @media (min-width: 900px) {
-    .bauhaus-split-layout {
-      display: flex;
-      width: 100%;
-      min-height: 100vh;
-    }
+  .back-btn:hover { background: var(--red); border-color: var(--red); box-shadow: 4px 4px 0 0 var(--ink); }
 
-    /* Fixed Left Image */
+  /* ---- Desktop split ---- */
+  @media (min-width: 900px) {
+    .bauhaus-split-layout { display: flex; width: 100%; min-height: 100vh; }
+
     .split-image-container {
       position: fixed;
-      top: 0;
-      left: 0;
-      bottom: 0;
-      width: 50%;
-      height: 100vh;
+      top: 0; left: 0; bottom: 0;
+      width: 45%;
       z-index: 10;
-      border-right: 8px solid #000;
-      background: #ddd;
+      border-right: 8px solid var(--ink);
+      background: #e6e1d7;
     }
 
-    /* Scrolling Right Content */
     .split-content-container {
-      width: 50%;
-      margin-left: 50%;
-      background: #fff;
+      width: 55%;
+      margin-left: 45%;
       min-height: 100vh;
     }
 
-    .content-padding {
-      padding: 60px;
-      max-width: 800px;
-    }
+    .content-padding { padding: 64px 64px 160px; max-width: 820px; }
   }
 
-  /* --- MOBILE LAYOUT (Stack) --- */
+  /* ---- Mobile stack ---- */
   @media (max-width: 899px) {
-    .bauhaus-split-layout { display: block; }
-
     .split-image-container {
       position: relative;
-      width: 100%;
-      height: 350px;
-      border-right: none;
-      border-bottom: 8px solid #000;
+      height: 42vh;
+      min-height: 240px;
+      max-height: 380px;
+      border-bottom: 8px solid var(--ink);
+      background: #e6e1d7;
     }
 
-    .split-content-container {
-      width: 100%;
-      margin-left: 0;
-    }
-
-    .content-padding { padding: 30px 20px; }
-    .recipe-title { font-size: 2.2rem !important; }
+    .content-padding { padding: 28px 16px 120px; }
+    .recipe-title { font-size: 2rem !important; padding: 12px 18px !important; box-shadow: 6px 6px 0 0 var(--ink) !important; }
+    .back-btn { position: absolute; top: 12px; left: 12px; }
   }
 
-  /* --- SHARED STYLES --- */
-  .image-div {
+  .recipe-image,
+  .no-image-msg {
     width: 100%;
     height: 100%;
-    background-size: cover;
-    background-position: center;
+    object-fit: cover;
   }
 
+  .no-image-msg {
+    background:
+      radial-gradient(circle at 30% 40%, var(--red) 0 16%, transparent 16.5%),
+      linear-gradient(90deg, transparent 62%, var(--yellow) 62% 76%, transparent 76%),
+      linear-gradient(0deg, var(--teal) 0 20%, transparent 20%),
+      #f0ebe1;
+  }
+
+  /* ---- Title & meta ---- */
   .recipe-title {
-    font-family: 'Jost', sans-serif !important;
-    font-size: 3.5rem;
-    background: #E63946;
+    font-size: 3.1rem;
+    background: var(--red);
     color: #fff;
     display: inline-block;
-    padding: 15px 25px;
-    margin-bottom: 30px;
-    box-shadow: 10px 10px 0px 0px #000;
-    border: 3px solid #000;
+    padding: 16px 26px;
+    margin: 0 0 32px;
+    box-shadow: 10px 10px 0 0 var(--ink);
+    border: 3px solid var(--ink);
     transform: rotate(-1.5deg);
-    line-height: 1;
+    line-height: 1.02;
     text-transform: uppercase;
     font-weight: 900;
+    overflow-wrap: anywhere;
   }
 
   .recipe-meta {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
-    margin-bottom: 32px;
+    margin-bottom: 20px;
   }
 
   .meta-chip {
     display: flex;
     flex-direction: column;
-    border: 3px solid #000;
+    justify-content: center;
+    border: var(--border);
     padding: 6px 12px;
-    background: #fff;
-    min-width: 52px;
+    background: var(--card);
+    min-width: 64px;
   }
 
   .meta-chip-label {
-    font-family: 'Jost', sans-serif;
-    font-size: 0.55rem;
+    font-size: 0.58rem;
     font-weight: 900;
     text-transform: uppercase;
     letter-spacing: 0.12em;
-    color: #999;
+    color: var(--muted);
     line-height: 1;
-    margin-bottom: 3px;
+    margin-bottom: 4px;
   }
 
   .meta-chip-value {
-    font-family: 'Jost', sans-serif;
-    font-size: 0.85rem;
+    font-size: 0.88rem;
     font-weight: 700;
-    color: #000;
     line-height: 1.2;
     text-transform: uppercase;
   }
 
-  .meta-chip.diff-easy  { border-color: #1a6b35; }
-  .meta-chip.diff-easy  .meta-chip-value { color: #1a6b35; }
-  .meta-chip.diff-medium { border-color: #856404; }
-  .meta-chip.diff-medium .meta-chip-value { color: #856404; }
-  .meta-chip.diff-hard  { border-color: #a01010; }
-  .meta-chip.diff-hard  .meta-chip-value { color: #a01010; }
-
-  .meta-chip.kid { border-color: #1a4b8a; }
-  .meta-chip.kid .meta-chip-value { color: #1a4b8a; }
-
-  .meta-chip.rating .meta-chip-value { color: #E63946; font-size: 1rem; letter-spacing: 0.05em; }
-
-  .meta-chip.last-made-chip { border-color: #555; }
-  .meta-chip.last-made-chip .meta-chip-value { color: #555; text-transform: none; font-size: 0.8rem; }
+  .meta-chip.diff-easy   { border-color: var(--easy); }
+  .meta-chip.diff-easy   .meta-chip-value { color: var(--easy); }
+  .meta-chip.diff-medium { border-color: var(--medium); }
+  .meta-chip.diff-medium .meta-chip-value { color: var(--medium); }
+  .meta-chip.diff-hard   { border-color: var(--hard); }
+  .meta-chip.diff-hard   .meta-chip-value { color: var(--hard); }
+  .meta-chip.kid         { border-color: var(--blue); }
+  .meta-chip.kid .meta-chip-value { color: var(--blue); }
+  .meta-chip.last-made-chip .meta-chip-value { text-transform: none; }
 
   .recipe-tags {
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
-    margin-bottom: 36px;
+    margin-bottom: 28px;
   }
 
   .recipe-tag {
-    font-family: 'Jost', sans-serif;
+    font-size: 0.62rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 4px 10px;
+    background: var(--ink);
+    color: #fff;
+    text-decoration: none;
+  }
+
+  .recipe-tag:hover { background: var(--red); }
+
+  .recipe-intro {
+    font-size: 1.05rem;
+    line-height: 1.65;
+    color: #333;
+    max-width: 62ch;
+  }
+
+  .recipe-intro a { color: var(--red); font-weight: 600; }
+
+  /* ---- Star widget ---- */
+  .star-widget { display: inline-flex; gap: 0; margin: -2px -3px; }
+
+  .star-widget .star {
+    background: none;
+    border: none;
+    padding: 0 3px;
+    font-size: 1.25rem;
+    line-height: 1;
+    color: #d6d1c7;
+    cursor: pointer;
+    transition: color 0.1s, transform 0.1s;
+  }
+
+  .star-widget .star.filled,
+  .star-widget .star.hover { color: var(--red); }
+  .star-widget .star.hover { transform: scale(1.15); }
+  .star-widget.saving { opacity: 0.5; pointer-events: none; }
+
+  /* ---- Cook toolbar ---- */
+  .cook-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 16px 24px;
+    margin: 36px 0 8px;
+  }
+
+  #cooking-mode-btn { font-size: 0.95rem; padding: 12px 24px; min-height: 48px; }
+
+  #cooking-mode-btn[aria-pressed="true"] {
+    background: var(--red);
+    border-color: var(--red);
+    box-shadow: 4px 4px 0 0 var(--ink);
+  }
+
+  .servings {
+    display: inline-flex;
+    align-items: stretch;
+    border: var(--border);
+    background: var(--card);
+  }
+
+  .servings-label {
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
     font-size: 0.6rem;
     font-weight: 900;
     text-transform: uppercase;
-    letter-spacing: 0.08em;
-    padding: 3px 10px;
-    background: #000;
-    color: #fff;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+    border-right: 2px solid var(--line);
   }
 
-  h2 {
-    margin-top: 50px;
-    margin-bottom: 25px;
-    border-bottom: 5px solid #000;
+  .servings-btn {
+    width: 44px;
+    min-height: 44px;
+    border: none;
+    background: none;
+    font-size: 1.3rem;
+    font-weight: 700;
+    cursor: pointer;
+    color: var(--ink);
+  }
+
+  .servings-btn:hover { background: var(--ink); color: #fff; }
+  .servings-btn:disabled { color: #ccc; background: none; cursor: default; }
+
+  .servings-value {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 7.5em;
+    padding: 0 8px;
+    font-weight: 800;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    border-left: 2px solid var(--line);
+    border-right: 2px solid var(--line);
+  }
+
+  .servings.scaled .servings-value { color: var(--red); }
+
+  /* ---- Sections ---- */
+  .section-head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 44px;
+    margin-bottom: 8px;
+    border-bottom: 5px solid var(--ink);
     padding-bottom: 10px;
-    font-size: 2rem;
+  }
+
+  .section-head h2 {
+    margin: 0;
+    font-size: 1.9rem;
     text-transform: uppercase;
     font-weight: 900;
-    font-family: 'Jost', sans-serif !important;
-    color: #000;
+    line-height: 1;
   }
 
-  ul, ol { padding-left: 0; list-style: none; }
+  .reset-checks {
+    background: none;
+    border: none;
+    font-size: 0.7rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    cursor: pointer;
+    padding: 4px 0;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
 
-  li {
-    padding: 15px 0;
-    border-bottom: 1px solid #eee;
+  .reset-checks:hover { color: var(--red); }
+
+  .check-list { padding: 0; margin: 0; list-style: none; }
+
+  .check-list li { border-bottom: 1px solid var(--line); }
+
+  .check-list label {
     display: flex;
     align-items: flex-start;
-    font-size: 1.2rem;
-    color: #000;
-    line-height: 1.4;
+    gap: 16px;
+    padding: 14px 0;
+    font-size: 1.1rem;
+    line-height: 1.55;
+    cursor: pointer;
   }
 
-  input[type="checkbox"] {
+  .check-list input[type="checkbox"] {
     appearance: none;
     -webkit-appearance: none;
-    width: 25px;
-    height: 25px;
-    border: 3px solid #000;
-    margin-right: 20px;
-    margin-top: 3px;
-    background: #fff;
+    width: 24px;
+    height: 24px;
+    margin: 2px 0 0;
+    border: 3px solid var(--ink);
+    background: var(--card);
     cursor: pointer;
     flex-shrink: 0;
-  }
-  
-  input[type="checkbox"]:checked {
-    background-color: #E63946;
+    display: grid;
+    place-content: center;
+    transition: background 0.1s;
   }
 
-  #cooking-mode-btn {
-    display: inline-block;
-    margin: 30px 0 10px;
-    padding: 14px 28px;
-    background: #000;
-    color: #fff;
-    font-family: 'Jost', sans-serif;
-    font-size: 1rem;
+  .check-list input[type="checkbox"]::after {
+    content: "";
+    width: 11px;
+    height: 6px;
+    border-left: 3px solid #fff;
+    border-bottom: 3px solid #fff;
+    transform: rotate(-45deg) translate(1px, -1px);
+    opacity: 0;
+  }
+
+  .check-list input[type="checkbox"]:checked { background: var(--red); border-color: var(--red); }
+  .check-list input[type="checkbox"]:checked::after { opacity: 1; }
+
+  .check-list li.done label { color: #a8a39a; }
+  #ingredient-list li.done .ingredient-text { text-decoration: line-through; }
+
+  .ingredient-text .qty { font-weight: 700; }
+  .ingredient-text .qty.scaled { color: var(--red); }
+
+  .scale-note { font-size: 0.8rem; color: var(--muted); margin: 10px 0 0; }
+
+  .steps .step-num {
+    flex-shrink: 0;
+    min-width: 1.4em;
     font-weight: 900;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    border: 3px solid #000;
-    box-shadow: 6px 6px 0px 0px #E63946;
-    cursor: pointer;
-    transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+    font-size: 1.25rem;
+    line-height: 1.3;
+    color: var(--red);
   }
 
-  #cooking-mode-btn.active {
-    background: #E63946;
-    color: #fff;
-    border-color: #E63946;
-    box-shadow: 6px 6px 0px 0px #000;
-  }
+  .steps li.done .step-num { color: #c9c4ba; }
 
-  #cooking-mode-btn:hover {
-    background: #E63946;
-    color: #fff;
-    border-color: #E63946;
+  /* ---- Cooking mode ---- */
+  .cooking .steps label { font-size: 1.3rem; line-height: 1.6; padding: 20px 0; }
+  .cooking .steps li { transition: background 0.2s; }
+  .cooking .steps li.current {
+    background: #fff8e9;
+    box-shadow: -16px 0 0 0 #fff8e9, 16px 0 0 0 #fff8e9;
+    border-left: 0;
   }
+  .cooking .steps li.current .step-num { color: var(--ink); }
 
   .cooking-ingredient {
-    background: #E63946;
+    background: var(--red-tint);
+    color: inherit;
+    padding: 0 3px;
+    border-bottom: 2px solid var(--red);
+    font-weight: 600;
+  }
+
+  .ci-qty {
+    display: inline-block;
+    margin-left: 4px;
+    padding: 0 5px;
+    background: var(--red);
     color: #fff;
-    padding: 1px 5px;
-    font-weight: 700;
-    border-radius: 2px;
+    font-size: 0.72em;
+    font-weight: 800;
+    vertical-align: 0.12em;
     white-space: nowrap;
   }
 
+  /* ---- Planner ---- */
   .planner-actions {
     display: flex;
     align-items: center;
     flex-wrap: wrap;
-    gap: 0.75rem;
-    margin-top: 50px;
-    padding-top: 30px;
-    border-top: 5px solid #000;
+    gap: 14px;
+    margin-top: 56px;
+    padding-top: 28px;
+    border-top: 5px solid var(--ink);
   }
+
+  .planner-msg a, .action-status a { color: inherit; }
 
   .day-picker {
-    display: none;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-top: 12px;
+    margin-top: 16px;
     padding: 16px;
-    background: #f8f8f8;
-    border: 3px solid #000;
-  }
-
-  .day-picker.open {
-    display: flex;
+    background: var(--paper);
+    border: var(--border);
   }
 
   .day-picker-label {
-    font-family: 'Jost', sans-serif;
+    display: block;
     font-size: 0.65rem;
     font-weight: 900;
     text-transform: uppercase;
     letter-spacing: 0.1em;
-    color: #555;
-    margin-right: 4px;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+
+  .day-picker-days {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
   }
 
   .day-btn {
-    font-family: 'Jost', sans-serif;
-    font-size: 0.72rem;
-    font-weight: 900;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    padding: 8px 14px;
-    border: 2px solid #000;
-    background: #fff;
-    color: #000;
-    cursor: pointer;
-    transition: background 0.12s, color 0.12s, border-color 0.12s;
-  }
-
-  .day-btn:hover {
-    background: #000;
-    color: #fff;
-  }
-
-  .day-btn.cancel-btn {
-    border-color: #aaa;
-    color: #aaa;
-    margin-left: 4px;
-  }
-
-  .day-btn.cancel-btn:hover {
-    background: #aaa;
-    color: #fff;
-    border-color: #aaa;
-  }
-
-  .planner-btn {
-    font-family: 'Jost', sans-serif;
-    font-size: 0.85rem;
-    font-weight: 900;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    padding: 10px 20px;
-    border: 3px solid #000;
-    cursor: pointer;
-    transition: background 0.15s, color 0.15s;
-  }
-
-  .plan-btn  { background: #000; color: #fff; }
-  .plan-btn:hover  { background: #E63946; border-color: #E63946; }
-  .made-btn  { background: #fff; color: #000; }
-  .made-btn:hover  { background: #000; color: #fff; }
-
-  .planner-msg {
-    font-size: 0.85rem;
-    font-style: italic;
-    color: #555;
-  }
-  .planner-msg.ok  { color: #155724; }
-  .planner-msg.err { color: #721c24; }
-
-  /* --- STAR WIDGET --- */
-  .star-widget {
-    display: inline-flex;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     gap: 2px;
+    padding: 8px 4px;
+    border: 2px solid var(--ink);
+    background: var(--card);
+    color: var(--ink);
     cursor: pointer;
+    font-size: 0.7rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    transition: background 0.12s, color 0.12s;
   }
 
-  .star-widget .star {
-    font-size: 1.1rem;
-    color: #ccc;
-    transition: color 0.1s, transform 0.1s;
-    user-select: none;
-  }
+  .day-btn small { font-size: 0.95rem; font-weight: 700; letter-spacing: 0; }
+  .day-btn:hover { background: var(--ink); color: #fff; }
+  .day-btn.today { border-color: var(--red); color: var(--red); }
+  .day-btn.today:hover { background: var(--red); color: #fff; }
+  .day-btn.past { opacity: 0.45; }
 
-  .star-widget .star.filled {
-    color: #E63946;
-  }
-
-  .star-widget .star.hover {
-    color: #E63946;
-    transform: scale(1.2);
-  }
-
-  .star-widget.saving .star {
-    opacity: 0.5;
-    pointer-events: none;
+  @media (max-width: 420px) {
+    .day-btn { font-size: 0.6rem; padding: 6px 2px; }
   }
 </style>
 
 <script>
-// Humanize the "last made" date chip
 (function () {
-  var el = document.getElementById('last-made-val');
-  if (!el) return;
-  var raw = el.dataset.date;
-  if (!raw || raw === 'None' || raw === '') return;
-  var d = new Date(raw);
-  if (isNaN(d)) return;
-  var days = Math.round((Date.now() - d.getTime()) / 86400000);
-  if (days === 0)       el.textContent = 'Today';
-  else if (days === 1)  el.textContent = 'Yesterday';
-  else if (days < 14)   el.textContent = days + ' days ago';
-  else if (days < 60)   el.textContent = Math.floor(days / 7) + ' weeks ago';
-  else                  el.textContent = Math.floor(days / 30) + ' months ago';
-})();
-</script>
+  var C = window.Chowdown;
+  var SLUG = {{ _slug | jsonify }};
+  var STORE_KEY = 'cook:' + SLUG;
+  var STORE_TTL = 12 * 3600 * 1000;
 
-<script>
-var GH_REPO    = 'billmiky/chowdown';
-var RECIPE_SLUG = '{{ page.path | remove: "_recipes/" | remove: ".md" }}';
+  /* ---------- Back: return to the list (keeping its scroll/filters) when we came from it ---------- */
+  document.getElementById('back-btn').addEventListener('click', function (e) {
+    try {
+      var ref = document.referrer && new URL(document.referrer);
+      if (ref && ref.origin === location.origin && history.length > 1) {
+        e.preventDefault();
+        history.back();
+      }
+    } catch (_) {}
+  });
 
-function ghPAT() { return localStorage.getItem('gh_pat') || ''; }
+  /* ---------- Last made ---------- */
+  var lastMadeVal = document.getElementById('last-made-val');
+  function showLastMade(raw) {
+    var days = C.daysSince(raw);
+    if (days === null) return;
+    var rel = C.relativeDays(days);
+    lastMadeVal.textContent = rel.charAt(0).toUpperCase() + rel.slice(1);
+    lastMadeVal.title = raw;
+    document.getElementById('last-made-chip').hidden = false;
+  }
+  showLastMade(lastMadeVal.dataset.date);
 
-async function triggerWorkflow(workflow, inputs) {
-  var token = ghPAT();
-  if (!token) throw new Error('No GitHub token — save one on the <a href="{{ site.baseurl }}/import/">Import page</a>');
-  var resp = await fetch(
-    'https://api.github.com/repos/' + GH_REPO + '/actions/workflows/' + workflow + '/dispatches',
-    {
-      method: 'POST',
-      headers: {
-        'Authorization': 'token ' + token,
-        'Accept': 'application/vnd.github.v3+json',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ ref: 'main', inputs: inputs }),
+  /* ---------- Quantity scaling ---------- */
+  var FRACS = { '¼': 1/4, '½': 1/2, '¾': 3/4, '⅓': 1/3, '⅔': 2/3, '⅛': 1/8, '⅜': 3/8, '⅝': 5/8, '⅞': 7/8,
+                '⅕': 1/5, '⅖': 2/5, '⅗': 3/5, '⅘': 4/5, '⅙': 1/6, '⅚': 5/6 };
+  var FRAC_CHARS = Object.keys(FRACS).join('');
+  var NUM = '(?:\\d+\\s+\\d+\\/\\d+|\\d+\\/\\d+|(?:\\d+(?:\\.\\d+)?|\\.\\d+)(?:\\s?[' + FRAC_CHARS + '])?|[' + FRAC_CHARS + '])';
+  var QTY_RE = new RegExp('^(\\s*)(' + NUM + ')(?:(\\s*(?:-|–|to)\\s*)(' + NUM + '))?');
+  var NICE = [[0, ''], [1/8, '⅛'], [1/4, '¼'], [1/3, '⅓'], [3/8, '⅜'], [1/2, '½'], [5/8, '⅝'], [2/3, '⅔'], [3/4, '¾'], [7/8, '⅞'], [1, '']];
+
+  function parseNum(tok) {
+    tok = tok.trim();
+    var m;
+    if ((m = tok.match(/^(\d+)\s+(\d+)\/(\d+)$/))) return +m[1] + m[2] / m[3];
+    if ((m = tok.match(/^(\d+)\/(\d+)$/))) return m[1] / m[2];
+    var frac = 0, last = tok.slice(-1);
+    if (FRACS[last] !== undefined) { frac = FRACS[last]; tok = tok.slice(0, -1).trim(); }
+    return (tok ? parseFloat(tok) : 0) + frac;
+  }
+
+  // Snap to the nearest kitchen fraction (eighths and thirds); whole numbers from 10 up
+  function formatNum(x) {
+    if (x >= 10) return String(Math.round(x));
+    var whole = Math.floor(x), rem = x - whole, best = NICE[0];
+    NICE.forEach(function (n) { if (Math.abs(rem - n[0]) < Math.abs(rem - best[0])) best = n; });
+    if (best[0] === 1) { whole += 1; best = NICE[0]; }
+    if (!whole && !best[1]) return '⅛';
+    return (whole ? String(whole) : '') + best[1];
+  }
+
+  // Returns { html, qty } — qty is the (scaled) leading amount, if any
+  function scaleIngredient(text, factor) {
+    var m = text.match(QTY_RE);
+    if (!m) return { html: C.escapeHtml(text), qty: '' };
+    var a = parseNum(m[2]) * factor;
+    var amount = formatNum(a) + (m[4] ? m[3] + formatNum(parseNum(m[4]) * factor) : '');
+    if (factor === 1) amount = m[0].trim();
+    var rest = C.escapeHtml(text.slice(m[0].length));
+    if (factor !== 1) {
+      // Also scale "(70 grams)" / "(4 ounces)" — but not package sizes like "(24-ounce)"
+      rest = rest.replace(/\((\d+(?:\.\d+)?)(\s+[a-z])/gi, function (_, n, unit) {
+        return '(<span class="qty scaled">' + formatNum(parseFloat(n) * factor) + '</span>' + unit;
+      });
     }
-  );
-  if (resp.status === 204) return;
-  var body = {};
-  try { body = await resp.json(); } catch (e) {}
-  throw new Error(body.message || ('HTTP ' + resp.status));
-}
-
-async function addToWeek() {
-  var msg = document.getElementById('planner-msg');
-  msg.innerHTML = 'Adding…';
-  msg.className = 'planner-msg';
-  try {
-    await triggerWorkflow('plan-add.yml', { slug: RECIPE_SLUG });
-    msg.innerHTML = '✓ Queued — will appear in plan after ~30s';
-    msg.className = 'planner-msg ok';
-  } catch (e) {
-    msg.innerHTML = e.message;
-    msg.className = 'planner-msg err';
+    return {
+      html: m[1] + '<span class="qty' + (factor !== 1 ? ' scaled' : '') + '">' + C.escapeHtml(amount) + '</span>' + rest,
+      qty: amount,
+    };
   }
-}
 
-function toggleDayPicker() {
-  var picker = document.getElementById('day-picker');
-  picker.classList.toggle('open');
-}
+  /* ---------- Servings control ---------- */
+  var servingsEl = document.getElementById('servings');
+  var servingsVal = document.getElementById('servings-value');
+  var ingredientSpans = Array.from(document.querySelectorAll('.ingredient-text'));
+  var yieldText = servingsEl ? servingsEl.dataset.yield : '';
+  var yieldMatch = yieldText.match(/^\s*(\d+(?:\.\d+)?)(.*)$/);
+  var baseServings = yieldMatch ? parseFloat(yieldMatch[1]) : 0;
+  var MULTS = [0.5, 1, 1.5, 2, 3, 4];
+  var factor = 1;
 
-async function addToDay(day) {
-  var msg = document.getElementById('planner-msg');
-  var picker = document.getElementById('day-picker');
-  picker.classList.remove('open');
-  var label = day.charAt(0).toUpperCase() + day.slice(1);
-  msg.innerHTML = 'Adding to ' + label + '…';
-  msg.className = 'planner-msg';
-  try {
-    await triggerWorkflow('plan-add.yml', { slug: RECIPE_SLUG, day: day });
-    msg.innerHTML = '✓ Added to ' + label + '!';
-    msg.className = 'planner-msg ok';
-  } catch (e) {
-    msg.innerHTML = e.message;
-    msg.className = 'planner-msg err';
+  function servingsLabel() {
+    if (!baseServings) return '×' + formatNum(factor);
+    var n = Math.round(baseServings * factor * 10) / 10;
+    var rest = yieldMatch[2].replace(/^\s*(to|-|–)\s*\d+/, '');   // "4 to 6 servings" → "4 servings" once scaled
+    return (factor === 1 ? yieldText : n + rest);
   }
-}
 
-async function logMade() {
-  var msg = document.getElementById('planner-msg');
-  msg.innerHTML = 'Saving…';
-  msg.className = 'planner-msg';
-  try {
-    await triggerWorkflow('update-made.yml', { slug: RECIPE_SLUG });
-    msg.innerHTML = '✓ Logged — see you in two weeks!';
-    msg.className = 'planner-msg ok';
-  } catch (e) {
-    msg.innerHTML = e.message;
-    msg.className = 'planner-msg err';
-  }
-}
-
-async function setRating(val) {
-  var widget = document.getElementById('star-widget');
-  var msg = document.getElementById('planner-msg');
-  if (!widget) return;
-  widget.classList.add('saving');
-  msg.innerHTML = 'Saving rating…';
-  msg.className = 'planner-msg';
-  try {
-    await triggerWorkflow('update-rating.yml', { slug: RECIPE_SLUG, rating: String(val) });
-    widget.dataset.current = val;
-    widget.querySelectorAll('.star').forEach(function (s) {
-      s.classList.toggle('filled', parseInt(s.dataset.val, 10) <= val);
+  function renderIngredients() {
+    ingredientSpans.forEach(function (span) {
+      span.innerHTML = scaleIngredient(span.dataset.orig, factor).html;
     });
-    msg.innerHTML = '✓ Rating saved!';
-    msg.className = 'planner-msg ok';
-  } catch (e) {
-    msg.innerHTML = e.message;
-    msg.className = 'planner-msg err';
-  } finally {
-    widget.classList.remove('saving');
+    if (!servingsEl) return;
+    servingsVal.textContent = servingsLabel();
+    servingsEl.classList.toggle('scaled', factor !== 1);
+    document.getElementById('scale-note').hidden = factor === 1;
+    servingsEl.querySelector('[data-step="-1"]').disabled = factor <= nextFactor(-1, true);
+    servingsEl.querySelector('[data-step="1"]').disabled = factor >= nextFactor(1, true);
+    if (cooking) highlightDirections();
   }
-}
 
-// Wire up star widget hover + click
-(function () {
-  var widget = document.getElementById('star-widget');
-  if (!widget) return;
-  var stars = Array.from(widget.querySelectorAll('.star'));
+  // Small yields step one serving at a time; big batches (12 muffins) and unknown yields step through MULTS
+  var stepByOne = baseServings > 0 && baseServings <= 8;
 
-  stars.forEach(function (star) {
-    star.addEventListener('mouseenter', function () {
-      var hoverVal = parseInt(star.dataset.val, 10);
-      stars.forEach(function (s) {
-        s.classList.toggle('hover', parseInt(s.dataset.val, 10) <= hoverVal);
+  function nextFactor(dir, limit) {
+    if (stepByOne) {
+      var n = Math.round(baseServings * factor) + dir;
+      if (limit) return dir < 0 ? 1 / baseServings : 48 / baseServings;
+      return Math.min(Math.max(n, 1), 48) / baseServings;
+    }
+    if (limit) return dir < 0 ? MULTS[0] : MULTS[MULTS.length - 1];
+    var i = MULTS.indexOf(factor);
+    return MULTS[Math.min(Math.max(i + dir, 0), MULTS.length - 1)];
+  }
+
+  if (servingsEl) {
+    servingsEl.querySelectorAll('.servings-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        factor = nextFactor(parseInt(btn.dataset.step, 10));
+        renderIngredients();
+        persist();
       });
     });
-    star.addEventListener('mouseleave', function () {
-      stars.forEach(function (s) { s.classList.remove('hover'); });
+  }
+
+  /* ---------- Checkboxes (persist for 12h so a refresh mid-cook keeps your place) ---------- */
+  var ingItems = Array.from(document.querySelectorAll('#ingredient-list li'));
+  var stepItems = Array.from(document.querySelectorAll('#direction-list li'));
+  var resetBtn = document.querySelector('.reset-checks');
+
+  function checkedIdx(items) {
+    return items.reduce(function (acc, li, i) { if (li.querySelector('input').checked) acc.push(i); return acc; }, []);
+  }
+
+  function persist() {
+    C.save(STORE_KEY, { t: Date.now(), ing: checkedIdx(ingItems), dir: checkedIdx(stepItems), factor: factor });
+  }
+
+  function syncState() {
+    ingItems.concat(stepItems).forEach(function (li) {
+      li.classList.toggle('done', li.querySelector('input').checked);
     });
-    star.addEventListener('click', function () {
-      setRating(parseInt(star.dataset.val, 10));
+    var current = stepItems.find(function (li) { return !li.querySelector('input').checked; });
+    stepItems.forEach(function (li) { li.classList.toggle('current', li === current); });
+    if (resetBtn) resetBtn.hidden = !ingItems.concat(stepItems).some(function (li) { return li.classList.contains('done'); });
+    return current;
+  }
+
+  ingItems.concat(stepItems).forEach(function (li) {
+    li.querySelector('input').addEventListener('change', function () {
+      var current = syncState();
+      persist();
+      if (cooking && stepItems.indexOf(li) !== -1 && this.checked && current) {
+        current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
     });
   });
 
-  widget.addEventListener('mouseleave', function () {
-    stars.forEach(function (s) { s.classList.remove('hover'); });
+  if (resetBtn) {
+    resetBtn.addEventListener('click', function () {
+      ingItems.concat(stepItems).forEach(function (li) { li.querySelector('input').checked = false; });
+      syncState();
+      persist();
+    });
+  }
+
+  var saved = C.load(STORE_KEY, null);
+  if (saved && Date.now() - saved.t < STORE_TTL) {
+    (saved.ing || []).forEach(function (i) { if (ingItems[i]) ingItems[i].querySelector('input').checked = true; });
+    (saved.dir || []).forEach(function (i) { if (stepItems[i]) stepItems[i].querySelector('input').checked = true; });
+    if (saved.factor && (stepByOne || MULTS.indexOf(saved.factor) !== -1)) factor = saved.factor;
+  }
+
+  /* ---------- Cooking mode ---------- */
+  var cooking = false;
+  var wakeLock = null;
+  var cookBtn = document.getElementById('cooking-mode-btn');
+  var directionSpans = Array.from(document.querySelectorAll('.direction-text'));
+  directionSpans.forEach(function (s) { s.dataset.orig = s.textContent; });
+
+  var STOP = new Set(['optional', 'divided', 'taste', 'more', 'plus', 'fresh', 'freshly', 'large', 'small', 'medium',
+    'chopped', 'minced', 'sliced', 'diced', 'grated', 'finely', 'thinly', 'roughly', 'whole', 'leaves', 'cut',
+    'pieces', 'about', 'into', 'needed', 'serving', 'such', 'packed', 'peeled', 'trimmed', 'room', 'temperature']);
+  var UNIT_RE = /^(?:cups?|c\.|tbsps?|tablespoons?|tsps?|teaspoons?|fl\.? oz|oz|ounces?|lbs?|pounds?|grams?|g|kg|ml|l|liters?|litres?|pinch(?:es)?|dash(?:es)?|handfuls?|cloves?|cans?|jars?|slices?|bunch(?:es)?|heads?|pieces?|sprigs?|stalks?|sticks?|inch(?:es)?|packages?|pkgs?|quarts?|pints?)\b\.?\s*/i;
+
+  // Pull searchable names out of "1 (24-ounce) jar marinara sauce, warmed" → ["marinara sauce", "sauce"…]
+  function ingredientTerms(text) {
+    var m = text.match(QTY_RE);
+    var rest = m ? text.slice(m[0].length) : text;
+    rest = rest.replace(/\([^)]*\)/g, ' ').trim().replace(UNIT_RE, '').replace(/^of\s+/i, '');
+    rest = rest.split(/,|;| or | for | plus /i)[0].toLowerCase().replace(/[^a-zÀ-ɏḀ-ỿ' -]/g, ' ');
+    var words = rest.split(/\s+/).filter(function (w) { return w && !STOP.has(w); });
+    var terms = [];
+    if (words.length) terms.push(words.join(' '));
+    if (words.length > 2) terms.push(words.slice(-2).join(' '));
+    if (words.length > 1 && words[words.length - 1].length > 3) terms.push(words[words.length - 1]);
+    return terms.filter(function (t) { return t.length > 2; });
+  }
+
+  function highlightDirections() {
+    var termMap = {};
+    ingredientSpans.forEach(function (span, i) {
+      ingredientTerms(span.dataset.orig).forEach(function (t) { if (!(t in termMap)) termMap[t] = i; });
+    });
+    var terms = Object.keys(termMap).sort(function (a, b) { return b.length - a.length; });
+    if (!terms.length) return;
+    var re = new RegExp('\\b(' + terms.map(function (t) {
+      return t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }).join('|') + ')(?:e?s)?\\b', 'gi');
+
+    var shown = {};
+    directionSpans.forEach(function (span) {
+      // Single pass over escaped text, so a later match can never land inside an earlier <mark>
+      span.innerHTML = C.escapeHtml(span.dataset.orig).replace(re, function (match, term) {
+        var idx = termMap[term.toLowerCase()];
+        var orig = ingredientSpans[idx].dataset.orig;
+        var qty = '';
+        if (!shown[idx]) {
+          shown[idx] = true;
+          var scaled = scaleIngredient(orig, factor).qty;
+          var unit = orig.slice((orig.match(QTY_RE) || [''])[0].length).replace(/\([^)]*\)/g, ' ').trim().match(UNIT_RE);
+          if (scaled) qty = '<span class="ci-qty">' + C.escapeHtml(scaled + (unit ? ' ' + unit[0].trim() : '')) + '</span>';
+        }
+        return '<mark class="cooking-ingredient" title="' + C.escapeHtml(orig) + '">' + match + '</mark>' + qty;
+      });
+    });
+  }
+
+  function restoreDirections() {
+    directionSpans.forEach(function (span) { span.textContent = span.dataset.orig; });
+  }
+
+  async function requestWakeLock() {
+    try {
+      if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen');
+    } catch (_) { wakeLock = null; }
+  }
+
+  document.addEventListener('visibilitychange', function () {
+    if (cooking && document.visibilityState === 'visible') requestWakeLock();
+  });
+
+  if (cookBtn) {
+    cookBtn.addEventListener('click', function () {
+      cooking = !cooking;
+      document.body.classList.toggle('cooking', cooking);
+      cookBtn.setAttribute('aria-pressed', String(cooking));
+      cookBtn.textContent = cooking ? 'Exit Cooking Mode' : 'Start Cooking';
+      if (cooking) {
+        highlightDirections();
+        requestWakeLock();
+        C.toast('Cooking mode on' + ('wakeLock' in navigator ? ' — screen will stay awake' : ''), 'ok');
+      } else {
+        restoreDirections();
+        if (wakeLock) { wakeLock.release().catch(function () {}); wakeLock = null; }
+      }
+    });
+  }
+
+  renderIngredients();
+  syncState();
+
+  /* ---------- Rating ---------- */
+  var widget = document.getElementById('star-widget');
+  var stars = Array.from(widget.querySelectorAll('.star'));
+  var msg = document.getElementById('planner-msg');
+
+  function paintStars(val, cls) {
+    stars.forEach(function (s) { s.classList.toggle(cls, parseInt(s.dataset.val, 10) <= val); });
+  }
+
+  stars.forEach(function (star) {
+    var val = parseInt(star.dataset.val, 10);
+    star.addEventListener('mouseenter', function () { paintStars(val, 'hover'); });
+    star.addEventListener('focus', function () { paintStars(val, 'hover'); });
+    star.addEventListener('blur', function () { paintStars(0, 'hover'); });
+    star.addEventListener('click', async function () {
+      widget.classList.add('saving');
+      try {
+        await C.triggerWorkflow('update-rating.yml', { slug: SLUG, rating: String(val) });
+        widget.dataset.current = val;
+        paintStars(val, 'filled');
+        stars.forEach(function (s) { s.setAttribute('aria-pressed', String(s === star)); });
+        document.getElementById('rating-label').textContent = 'Rating';
+        C.toast('✓ Rated ' + val + ' star' + (val > 1 ? 's' : ''), 'ok');
+      } catch (e) {
+        C.toast(e.message, 'err');
+      } finally {
+        widget.classList.remove('saving');
+      }
+    });
+  });
+  widget.addEventListener('mouseleave', function () { paintStars(0, 'hover'); });
+
+  /* ---------- Plan / made ---------- */
+  var DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+  var planBtn = document.getElementById('plan-btn');
+  var picker = document.getElementById('day-picker');
+  var daysWrap = document.getElementById('day-picker-days');
+
+  var monday = C.mondayOf(new Date());
+  var todayIdx = (new Date().getDay() + 6) % 7;
+  DAYS.forEach(function (day, i) {
+    var d = new Date(monday); d.setDate(monday.getDate() + i);
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'day-btn' + (i === todayIdx ? ' today' : '') + (i < todayIdx ? ' past' : '');
+    btn.innerHTML = day.slice(0, 3) + '<small>' + d.getDate() + '</small>';
+    btn.setAttribute('aria-label', day + (i === todayIdx ? ' (today)' : ''));
+    btn.addEventListener('click', function () { addToDay(day); });
+    daysWrap.appendChild(btn);
+  });
+
+  planBtn.addEventListener('click', function () {
+    picker.hidden = !picker.hidden;
+    planBtn.setAttribute('aria-expanded', String(!picker.hidden));
+  });
+
+  function setMsg(html, cls) {
+    msg.innerHTML = html;
+    msg.className = 'action-status' + (cls ? ' ' + cls : '');
+  }
+
+  async function addToDay(day) {
+    picker.hidden = true;
+    planBtn.setAttribute('aria-expanded', 'false');
+    var label = day.charAt(0).toUpperCase() + day.slice(1);
+    setMsg('Adding to ' + label + '…');
+    try {
+      await C.triggerWorkflow('plan-add.yml', { slug: SLUG, day: day });
+      setMsg('✓ Added to ' + label + ' — <a href="' + C.BASE + '/meal-plan/">view plan</a> (updates in ~1 min)', 'ok');
+    } catch (e) {
+      setMsg(e.message, 'err');
+    }
+  }
+
+  document.getElementById('made-btn').addEventListener('click', async function () {
+    var btn = this;
+    btn.disabled = true;
+    setMsg('Saving…');
+    try {
+      await C.triggerWorkflow('update-made.yml', { slug: SLUG });
+      showLastMade(C.isoDate(new Date()));
+      setMsg('✓ Logged as made today', 'ok');
+    } catch (e) {
+      setMsg(e.message, 'err');
+    } finally {
+      btn.disabled = false;
+    }
   });
 })();
-</script>
-
-<script>
-function parseIngredientName(ingredientStr) {
-  const units = ['cups?','tbsp','tablespoons?','tsp','teaspoons?','fl oz','oz','ounces?','lbs?','pounds?','grams?','\\bg\\b','kg','ml','liters?','litres?','pinch(?:es)?','dash(?:es)?','handful','cloves?','cans?','slices?','bunches?','heads?','medium','large','small','pieces?','sprigs?','stalks?','inches?','inch'];
-  const unitRe = new RegExp('^(?:' + units.join('|') + ')\\s+', 'i');
-  const numRe = /^[\d\s\u00BC-\u00BE\u2150-\u215E\/\.\-]+/;
-  let name = ingredientStr.trim();
-  name = name.replace(numRe, '').trim();
-  name = name.replace(unitRe, '').trim();
-  name = name.replace(/\(.*?\)/g, '').trim();
-  return name;
-}
-
-var _originalDirections = null;
-
-function toggleCookingMode() {
-  var btn = document.getElementById('cooking-mode-btn');
-  var ingSection = document.getElementById('ingredients-section');
-  var dataEl = document.getElementById('ingredients-data');
-  if (!btn || !ingSection || !dataEl) return;
-
-  var isActive = btn.classList.toggle('active');
-
-  if (isActive) {
-    btn.textContent = 'EXIT COOKING MODE';
-    ingSection.style.display = 'none';
-    applyIngredientsToDirections(JSON.parse(dataEl.textContent));
-  } else {
-    btn.textContent = 'COOKING MODE';
-    ingSection.style.display = '';
-    restoreDirections();
-  }
-}
-
-function applyIngredientsToDirections(ingredients) {
-  var spans = document.querySelectorAll('#directions-section .direction-text');
-  _originalDirections = [];
-
-  // Build ingredient list sorted longest name first to avoid partial overlaps
-  var parsed = ingredients.map(function(ing) {
-    return { full: ing, name: parseIngredientName(ing) };
-  }).filter(function(i) { return i.name.length > 2; });
-  parsed.sort(function(a, b) { return b.name.length - a.name.length; });
-
-  spans.forEach(function(span) {
-    _originalDirections.push(span.innerHTML);
-    var html = span.innerHTML;
-    parsed.forEach(function(item) {
-      var escaped = item.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      var re = new RegExp('\\b(' + escaped + ')\\b', 'gi');
-      html = html.replace(re, '<mark class="cooking-ingredient" title="' + item.full.replace(/"/g, '&quot;') + '">' + item.full + '</mark>');
-    });
-    span.innerHTML = html;
-  });
-}
-
-function restoreDirections() {
-  if (!_originalDirections) return;
-  var spans = document.querySelectorAll('#directions-section .direction-text');
-  spans.forEach(function(span, i) {
-    span.innerHTML = _originalDirections[i];
-  });
-  _originalDirections = null;
-}
 </script>

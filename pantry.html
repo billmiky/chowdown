@@ -7,11 +7,7 @@ permalink: /pantry/
 {% assign pantry = site.data.pantry %}
 
 <style>
-  * { box-sizing: border-box; }
-  body, html { margin: 0; padding: 0; background: #f4f4f4; }
-
-  .bauhaus-home-layout { display: flex; min-height: 100vh; }
-  .bauhaus-page-content { flex: 1; margin-left: 300px; padding: 60px 48px; }
+  /* App shell, header and buttons come from assets/css/chowdown.css */
 
   /* ---- Page header ---- */
   .page-header-row {
@@ -421,12 +417,6 @@ permalink: /pantry/
     padding: 24px 0;
   }
 
-  /* ---- Mobile ---- */
-  @media (max-width: 900px) {
-    .bauhaus-home-layout { flex-direction: column; }
-    .bauhaus-page-content { margin-left: 0; padding: 24px; }
-  }
-
   @media (max-width: 560px) {
     .page-header-row { flex-direction: column; align-items: flex-start; }
     .receipt-box { padding: 18px; }
@@ -463,7 +453,7 @@ permalink: /pantry/
 
     <div class="page-header-row">
       <div>
-        <h2 class="section-header">Pantry</h2>
+        <h1 class="section-header">Pantry</h1>
         <p class="page-sub">
           Staples you always have &amp; items on hand from recent receipts
         </p>

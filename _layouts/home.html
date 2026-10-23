@@ -2,455 +2,516 @@
 layout: default
 ---
 
+{% assign recipes = site.recipes | sort: 'date_added' | reverse %}
+
 <div class="bauhaus-home-layout">
 
   {% include sidebar.html %}
 
   <main class="home-grid-container">
-    
-    <div class="search-bar">
-      <span class="search-icon">⌕</span>
-      <input type="text" id="recipe-search" class="search-input" placeholder="Search recipes…" autocomplete="off">
-      <button class="search-clear" id="search-clear" title="Clear">✕</button>
+
+    <div class="page-header-row">
+      <div class="header-left">
+        <h1 class="section-header">Recipes</h1>
+        <span class="week-of-label" id="result-count">{{ recipes | size }} recipes</span>
+      </div>
+      <div class="header-actions">
+        <button class="bauhaus-btn ghost" id="surprise-btn" type="button">Surprise Me</button>
+      </div>
     </div>
 
-    <div class="sort-bar">
-      <span class="sort-label">Sort:</span>
-      <button class="sort-btn active" data-sort="date">Recently Added</button>
-      <button class="sort-btn" data-sort="last_made">Last Cooked</button>
-      <button class="sort-btn" data-sort="rating">Top Rated</button>
-      <button class="sort-btn" data-sort="time">Quickest</button>
+    <div class="toolbar">
+      <div class="search-bar">
+        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 21 21"/></svg>
+        <label for="recipe-search" class="sr-only">Search recipes</label>
+        <input type="search" id="recipe-search" class="search-input" placeholder="Search titles, ingredients, tags…" autocomplete="off" enterkeyhint="search">
+        <kbd class="search-kbd" aria-hidden="true">/</kbd>
+        <button class="search-clear" id="search-clear" type="button" aria-label="Clear search">✕</button>
+      </div>
+
+      <div class="chip-row" role="group" aria-label="Filters">
+        <button class="chip" type="button" data-filter="quick" aria-pressed="false">≤ 30 min</button>
+        <button class="chip" type="button" data-filter="easy" aria-pressed="false">Easy</button>
+        <button class="chip" type="button" data-filter="kid" aria-pressed="false">Kid-friendly</button>
+        <button class="chip" type="button" data-filter="top" aria-pressed="false">★ 4+</button>
+        <button class="chip" type="button" data-filter="due" aria-pressed="false">Not made lately</button>
+      </div>
+
+      <div class="sort-bar">
+        <label for="sort-select" class="sort-label">Sort</label>
+        <select id="sort-select" class="sort-select">
+          <option value="date">Recently added</option>
+          <option value="last_made">Last cooked</option>
+          <option value="rating">Top rated</option>
+          <option value="time">Quickest</option>
+          <option value="title">A–Z</option>
+        </select>
+      </div>
     </div>
 
     <div class="recipe-grid">
-      {% assign recipes = site.recipes | sort: 'date_added' | reverse %}
-      
       {% for post in recipes %}
+      {% assign _t = post.total_time | default: post.cook_time %}
+      {% assign _kid = false %}{% if post.kid_friendly == true or post.kid_friendly == "true" %}{% assign _kid = true %}{% endif %}
       <a href="{{ post.url | relative_url }}" class="recipe-card"
-         data-title="{{ post.title | downcase }}"
+         data-title="{{ post.title | downcase | escape }}"
+         data-search="{{ post.title | append: ' ' | append: post.category | downcase | escape }} {{ post.tags | join: ' ' | downcase | escape }} {{ post.ingredients | join: ' ' | downcase | escape }}"
          data-date="{{ post.date_added | date: '%s' }}"
-         data-last-made="{% if post.last_made %}{{ post.last_made | date: '%s' }}{% else %}0{% endif %}"
+         data-last-made="{{ post.last_made }}"
          data-rating="{{ post.rating | default: 0 }}"
-         data-time="{{ post.total_time | default: post.cook_time | default: 9999 }}">
-        
+         data-time="{% if _t %}{{ _t | plus: 0 }}{% else %}0{% endif %}"
+         data-difficulty="{{ post.difficulty }}"
+         data-kid="{{ _kid }}">
+
         <div class="card-image-box">
-          <div class="card-image" style="background-image: url('{{ site.baseurl }}/images/{{ post.image }}');"></div>
-          {% unless post.image %}
-            <div class="no-image-pattern">NO IMG</div>
-          {% endunless %}
+          {% if post.image %}
+            <img class="card-image" src="{{ '/images/' | append: post.image | relative_url }}" alt="" loading="lazy" decoding="async">
+          {% else %}
+            <div class="no-image-pattern" aria-hidden="true"></div>
+          {% endif %}
           {% if post.last_made %}
             <span class="last-made-badge" data-date="{{ post.last_made }}">Made {{ post.last_made }}</span>
           {% endif %}
         </div>
 
         <div class="card-text">
-          <h3 class="card-title">{{ post.title }}</h3>
-          <span class="card-arrow">→</span>
+          <h2 class="card-title">{{ post.title }}</h2>
+          <span class="card-arrow" aria-hidden="true">→</span>
         </div>
-        {% if post.difficulty or post.rating or post.cook_time or post.total_time or post.kid_friendly == true or post.kid_friendly == "true" %}
+
         <div class="card-meta">
           {% if post.difficulty %}
             <span class="card-badge {{ post.difficulty }}">{{ post.difficulty }}</span>
           {% endif %}
-          {% if post.kid_friendly == true or post.kid_friendly == "true" %}
+          {% if _kid %}
             <span class="card-badge kid">Kids</span>
           {% endif %}
-          {% if post.total_time %}
-            <span class="card-badge time">{{ post.total_time }}</span>
-          {% elsif post.cook_time %}
-            <span class="card-badge time">{{ post.cook_time }}</span>
+          {% if _t %}
+            <span class="card-badge time">{% include minutes.html m=_t %}</span>
           {% endif %}
           {% if post.rating %}
-            <span class="card-rating">{% assign _r = post.rating %}{% for i in (1.._r) %}★{% endfor %}</span>
+            {% assign _r = post.rating | plus: 0 %}
+            <span class="stars card-rating" aria-label="{{ _r }} out of 5 stars">{% for i in (1..5) %}{% if i <= _r %}★{% else %}<span class="off">★</span>{% endif %}{% endfor %}</span>
           {% endif %}
         </div>
-        {% endif %}
       </a>
       {% endfor %}
+
+      <div class="no-results-msg" id="no-results">
+        <p>No recipes match.</p>
+        <button class="bauhaus-btn ghost small" type="button" id="reset-filters">Clear search &amp; filters</button>
+      </div>
     </div>
   </main>
 
 </div>
 
 <style>
-  /* --- 1. CRITICAL RESET --- */
-  /* This ensures borders and padding don't break width calculations */
-  * {
-    box-sizing: border-box;
-  }
-
-  body, html {
-    margin: 0;
-    padding: 0;
-    width: 100%;
-    background-color: #f8f8f8; /* Light grey canvas */
-  }
-
-  .bauhaus-home-layout {
+  /* ---- Toolbar ---- */
+  .toolbar {
     display: flex;
-    min-height: 100vh;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px 16px;
+    margin-bottom: 32px;
   }
 
-  /* --- 3. MAIN CONTENT (The Fix) --- */
-  .home-grid-container {
-    /* FIX: increased from 280px to 300px to prevent overlap with border */
-    margin-left: 300px; 
-    padding: 60px;
-    width: 100%;
-    background-color: #f8f8f8;
+  .search-bar {
+    display: flex;
+    align-items: center;
+    flex: 1 1 360px;
+    max-width: 520px;
+    border: var(--border);
+    background: var(--card);
+    transition: box-shadow 0.15s;
   }
 
-  .header-wrapper {
-    margin-bottom: 30px;
-    border-bottom: 5px solid #000; /* Underline the whole header area */
-    padding-bottom: 10px;
-    display: inline-block; /* Wraps tightly around text */
+  .search-bar:focus-within { box-shadow: 4px 4px 0 0 var(--red); }
+
+  .search-icon {
+    width: 18px;
+    height: 18px;
+    margin: 0 10px 0 14px;
+    color: var(--muted);
+    flex-shrink: 0;
   }
 
-  .section-header {
-    font-family: 'Jost', sans-serif !important;
-    font-size: 1.5rem;
+  .search-input {
+    flex: 1;
+    min-width: 0;
+    border: none;
+    outline: none;
+    font-size: 1rem;
+    font-weight: 500;
+    padding: 12px 0;
+    background: transparent;
+    color: var(--ink);
+  }
+
+  .search-input::-webkit-search-cancel-button { display: none; }
+  .search-input::placeholder { color: var(--faint); font-weight: 400; }
+
+  .search-kbd {
+    font-family: inherit;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--faint);
+    border: 2px solid var(--line);
+    padding: 0 6px;
+    margin-right: 10px;
+  }
+
+  .search-clear {
+    display: none;
+    align-self: stretch;
+    background: none;
+    border: none;
+    border-left: var(--border);
+    padding: 0 14px;
+    font-size: 0.8rem;
     font-weight: 900;
-    text-transform: uppercase;
-    color: #000;
-    margin: 0;
-    letter-spacing: 1px;
+    color: var(--muted);
+    cursor: pointer;
   }
 
-  /* --- 4. GRID --- */
+  .search-clear:hover { color: var(--red); }
+  .search-bar.has-value .search-clear { display: block; }
+  .search-bar.has-value .search-kbd { display: none; }
+
+  @media (hover: none) { .search-kbd { display: none; } }
+
+  .chip-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .chip {
+    min-height: 36px;
+    font-size: 0.7rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    padding: 6px 12px;
+    border: 2px solid var(--ink);
+    background: var(--card);
+    color: var(--ink);
+    cursor: pointer;
+    transition: background 0.12s, color 0.12s, border-color 0.12s;
+  }
+
+  .chip:hover { background: var(--ink); color: #fff; }
+
+  .chip[aria-pressed="true"] {
+    background: var(--red);
+    border-color: var(--red);
+    color: #fff;
+  }
+
+  .sort-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+  }
+
+  .sort-label {
+    font-weight: 900;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+  }
+
+  .sort-select {
+    min-height: 40px;
+    font-size: 0.8rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 6px 32px 6px 12px;
+    border: var(--border);
+    background: var(--card) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%23111' stroke-width='2.5'/%3E%3C/svg%3E") no-repeat right 10px center / 12px;
+    color: var(--ink);
+    appearance: none;
+    -webkit-appearance: none;
+    cursor: pointer;
+    border-radius: 0;
+  }
+
+  @media (max-width: 900px) {
+    .search-bar { max-width: none; flex-basis: 100%; }
+    .chip-row { flex-wrap: nowrap; overflow-x: auto; margin: 0 -16px; padding: 2px 16px 4px; scrollbar-width: none; }
+    .chip-row::-webkit-scrollbar { display: none; }
+    .chip { flex-shrink: 0; }
+    .sort-bar { margin-left: 0; }
+  }
+
+  /* ---- Grid ---- */
   .recipe-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 40px;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 36px;
   }
 
   .recipe-card {
-    display: block;
-    background: #fff;
-    border: 4px solid #000;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    background: var(--card);
+    border: var(--border-heavy);
     text-decoration: none;
+    color: var(--ink);
     transition: transform 0.2s, box-shadow 0.2s;
   }
 
-  .recipe-card:hover {
+  .recipe-card:hover,
+  .recipe-card:focus-visible {
     transform: translate(-6px, -6px);
-    box-shadow: 12px 12px 0px 0px #000;
-    z-index: 10;
+    box-shadow: 12px 12px 0 0 var(--ink);
+    z-index: 2;
   }
 
+  .recipe-card:focus-visible { outline: none; box-shadow: 12px 12px 0 0 var(--red); }
+
   .card-image-box {
-    height: 220px;
-    width: 100%;
-    border-bottom: 4px solid #000;
-    background: #ddd;
+    position: relative;
+    aspect-ratio: 4 / 3;
+    border-bottom: var(--border-heavy);
+    background: #e6e1d7;
     overflow: hidden;
   }
 
   .card-image {
     width: 100%;
     height: 100%;
-    background-size: cover;
-    background-position: center;
+    object-fit: cover;
     transition: transform 0.4s;
   }
 
-  .recipe-card:hover .card-image {
-    transform: scale(1.1);
+  .recipe-card:hover .card-image { transform: scale(1.06); }
+
+  .no-image-pattern {
+    width: 100%;
+    height: 100%;
+    background:
+      radial-gradient(circle at 30% 40%, var(--red) 0 18%, transparent 18.5%),
+      linear-gradient(90deg, transparent 62%, var(--yellow) 62% 78%, transparent 78%),
+      linear-gradient(0deg, var(--teal) 0 22%, transparent 22%),
+      #f0ebe1;
   }
 
   .card-text {
-    padding: 20px;
+    padding: 18px 20px 10px;
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
+    gap: 12px;
   }
 
   .card-title {
-    font-family: 'Jost', sans-serif !important;
     font-weight: 800;
-    font-size: 1.3rem;
-    color: #000;
+    font-size: 1.2rem;
     text-transform: uppercase;
-    line-height: 1.1;
+    line-height: 1.12;
     margin: 0;
   }
 
   .card-arrow {
-    color: #E63946;
+    color: var(--red);
     font-weight: 900;
-    font-size: 1.5rem;
+    font-size: 1.4rem;
+    line-height: 1;
+    transition: transform 0.2s;
   }
+
+  .recipe-card:hover .card-arrow { transform: translateX(4px); }
 
   .card-meta {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: 6px;
-    padding: 0 20px 16px;
+    padding: 4px 20px 18px;
+    margin-top: auto;
   }
-
-  .card-badge {
-    font-family: 'Jost', sans-serif;
-    font-size: 0.6rem;
-    font-weight: 900;
-    text-transform: uppercase;
-    letter-spacing: 0.07em;
-    padding: 3px 8px;
-    border: 2px solid #000;
-    color: #000;
-    background: #fff;
-  }
-
-  .card-badge.easy   { border-color: #1a6b35; color: #1a6b35; }
-  .card-badge.medium { border-color: #856404; color: #856404; }
-  .card-badge.hard   { border-color: #a01010; color: #a01010; }
-  .card-badge.kid    { border-color: #1a4b8a; color: #1a4b8a; }
-  .card-badge.time   { border-color: #555; color: #555; }
 
   .card-rating {
-    font-size: 0.75rem;
-    color: #E63946;
-    letter-spacing: 0.04em;
+    font-size: 0.8rem;
     margin-left: auto;
-  }
-
-  .card-image-box {
-    position: relative;
   }
 
   .last-made-badge {
     position: absolute;
-    bottom: 8px;
-    left: 8px;
-    background: rgba(0,0,0,0.72);
+    bottom: 10px;
+    left: 10px;
+    background: rgba(17,17,17,0.82);
     color: #fff;
     font-size: 0.65rem;
-    font-weight: 700;
+    font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    padding: 0.25em 0.55em;
-    border-radius: 2px;
+    padding: 4px 8px;
     pointer-events: none;
   }
-
-  .last-made-badge.stale {
-    background: #E63946;
-  }
-
-  /* --- SEARCH BAR --- */
-  .search-bar {
-    display: flex;
-    align-items: center;
-    gap: 0;
-    margin-bottom: 16px;
-    border: 3px solid #000;
-    background: #fff;
-    max-width: 480px;
-  }
-
-  .search-icon {
-    padding: 0 12px;
-    font-size: 1.2rem;
-    color: #555;
-    pointer-events: none;
-    line-height: 1;
-  }
-
-  .search-input {
-    flex: 1;
-    border: none;
-    outline: none;
-    font-family: 'Jost', sans-serif;
-    font-size: 0.85rem;
-    font-weight: 600;
-    padding: 10px 0;
-    background: transparent;
-    color: #000;
-  }
-
-  .search-input::placeholder {
-    color: #aaa;
-    font-weight: 400;
-  }
-
-  .search-clear {
-    display: none;
-    background: none;
-    border: none;
-    border-left: 3px solid #000;
-    padding: 8px 12px;
-    font-size: 0.7rem;
-    font-weight: 900;
-    color: #888;
-    cursor: pointer;
-    line-height: 1;
-  }
-
-  .search-clear:hover { color: #E63946; }
-
-  .search-bar.has-value .search-clear { display: block; }
 
   .no-results-msg {
     display: none;
     grid-column: 1 / -1;
-    font-family: 'Jost', sans-serif;
-    font-weight: 700;
-    font-size: 1rem;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: #888;
     padding: 40px 0;
   }
 
-  /* --- SORT BAR --- */
-  .sort-bar {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 30px;
-    flex-wrap: wrap;
-  }
-
-  .sort-label {
-    font-family: 'Jost', sans-serif;
-    font-weight: 900;
-    font-size: 0.7rem;
+  .no-results-msg p {
+    font-weight: 800;
+    font-size: 1rem;
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    color: #555;
-    margin-right: 4px;
+    color: var(--muted);
+    margin: 0 0 16px;
   }
 
-  .sort-btn {
-    font-family: 'Jost', sans-serif;
-    font-size: 0.7rem;
-    font-weight: 900;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    padding: 6px 14px;
-    border: 3px solid #000;
-    background: #fff;
-    color: #000;
-    cursor: pointer;
-    transition: background 0.15s, color 0.15s, border-color 0.15s;
-  }
-
-  .sort-btn:hover {
-    background: #000;
-    color: #fff;
-  }
-
-  .sort-btn.active {
-    background: #E63946;
-    border-color: #E63946;
-    color: #fff;
-  }
-
-  /* --- MOBILE RESPONSIVE --- */
-  @media (max-width: 900px) {
-    .bauhaus-home-layout { flex-direction: column; }
-    
-    .home-grid-container {
-      margin-left: 0;
-      padding: 20px;
-    }
+  @media (max-width: 560px) {
+    .recipe-grid { grid-template-columns: 1fr; gap: 24px; }
+    .card-image-box { aspect-ratio: 16 / 10; }
   }
 </style>
 
 <script>
 (function () {
-  var now = Date.now();
-  document.querySelectorAll('.last-made-badge[data-date]').forEach(function (badge) {
-    var raw = badge.dataset.date;
-    if (!raw || raw === 'null' || raw === '') return;
-    var d = new Date(raw);
-    if (isNaN(d)) return;
-    var days = Math.round((now - d.getTime()) / 86400000);
-    var label;
-    if (days === 0)       label = 'Made today';
-    else if (days === 1)  label = 'Made yesterday';
-    else if (days < 14)   label = 'Made ' + days + 'd ago';
-    else if (days < 60)   label = 'Made ' + Math.floor(days / 7) + 'w ago';
-    else                  label = 'Made ' + Math.floor(days / 30) + 'mo ago';
-    badge.textContent = label;
-    // Mark as stale if not made in the last 30 days
-    if (days > 30) badge.classList.add('stale');
-  });
-})();
-
-// Search filter
-(function () {
-  var input = document.getElementById('recipe-search');
-  var clearBtn = document.getElementById('search-clear');
-  var searchBar = input.closest('.search-bar');
+  var C = window.Chowdown;
   var grid = document.querySelector('.recipe-grid');
+  var cards = Array.from(grid.querySelectorAll('.recipe-card'));
+  var input = document.getElementById('recipe-search');
+  var searchBar = input.closest('.search-bar');
+  var sortSelect = document.getElementById('sort-select');
+  var chips = Array.from(document.querySelectorAll('.chip'));
+  var countEl = document.getElementById('result-count');
+  var noResults = document.getElementById('no-results');
+  var STALE_DAYS = 30;
 
-  // Insert a no-results message element once
-  var noResults = document.createElement('p');
-  noResults.className = 'no-results-msg';
-  noResults.textContent = 'No recipes match your search.';
-  grid.appendChild(noResults);
+  // Precompute per-card values once
+  cards.forEach(function (card) {
+    var d = card.dataset;
+    card._days = C.daysSince(d.lastMade);
+    card._rating = parseFloat(d.rating) || 0;
+    card._time = parseInt(d.time, 10) || 0;
+    card._date = parseInt(d.date, 10) || 0;
+  });
 
-  function filterCards() {
-    var query = input.value.trim().toLowerCase();
-    var cards = grid.querySelectorAll('.recipe-card');
-    var visible = 0;
-    cards.forEach(function (card) {
-      var title = card.dataset.title || '';
-      var show = !query || title.indexOf(query) !== -1;
-      card.style.display = show ? '' : 'none';
-      if (show) visible++;
-    });
-    noResults.style.display = visible === 0 ? 'block' : 'none';
-    searchBar.classList.toggle('has-value', query.length > 0);
+  // Humanize "last made" badges
+  cards.forEach(function (card) {
+    var badge = card.querySelector('.last-made-badge');
+    if (!badge) return;
+    if (card._days === null) { badge.remove(); return; }
+    badge.textContent = 'Made ' + C.relativeDays(card._days);
+  });
+
+  var state = C.load('home-view', { sort: 'date', filters: [] });
+  sortSelect.value = state.sort || 'date';
+  if (!sortSelect.value) sortSelect.value = 'date';
+  chips.forEach(function (chip) {
+    chip.setAttribute('aria-pressed', String((state.filters || []).indexOf(chip.dataset.filter) !== -1));
+  });
+
+  var FILTERS = {
+    quick: function (c) { return c._time > 0 && c._time <= 30; },
+    easy:  function (c) { return c.dataset.difficulty === 'easy'; },
+    kid:   function (c) { return c.dataset.kid === 'true'; },
+    top:   function (c) { return c._rating >= 4; },
+    due:   function (c) { return c._days === null || c._days > STALE_DAYS; },
+  };
+
+  // Missing values (null / 0) always sort last
+  var SORTS = {
+    date:      function (a, b) { return b._date - a._date; },
+    last_made: function (a, b) {
+      if (a._days === null || b._days === null) return (a._days === null) - (b._days === null);
+      return a._days - b._days;
+    },
+    rating:    function (a, b) { return b._rating - a._rating; },
+    time:      function (a, b) {
+      if (!a._time || !b._time) return (!a._time) - (!b._time);
+      return a._time - b._time;
+    },
+    title:     function (a, b) { return a.dataset.title.localeCompare(b.dataset.title); },
+  };
+
+  function activeFilters() {
+    return chips.filter(function (c) { return c.getAttribute('aria-pressed') === 'true'; })
+                .map(function (c) { return c.dataset.filter; });
   }
 
-  input.addEventListener('input', filterCards);
-  clearBtn.addEventListener('click', function () {
-    input.value = '';
-    filterCards();
-    input.focus();
-  });
-})();
+  function render() {
+    var terms = input.value.trim().toLowerCase().split(/\s+/).filter(Boolean);
+    var filters = activeFilters();
+    var visible = 0;
 
-// Sort bar
-(function () {
-  var grid = document.querySelector('.recipe-grid');
-  document.querySelectorAll('.sort-btn').forEach(function (btn) {
-    btn.addEventListener('click', function () {
-      document.querySelectorAll('.sort-btn').forEach(function (b) { b.classList.remove('active'); });
-      btn.classList.add('active');
-      var sort = btn.dataset.sort;
-      var cards = Array.from(grid.querySelectorAll('.recipe-card'));
-      cards.sort(function (a, b) {
-        var av, bv;
-        if (sort === 'date') {
-          av = parseInt(a.dataset.date, 10) || 0;
-          bv = parseInt(b.dataset.date, 10) || 0;
-          return bv - av;
-        } else if (sort === 'last_made') {
-          av = parseInt(a.dataset.lastMade, 10) || 0;
-          bv = parseInt(b.dataset.lastMade, 10) || 0;
-          if (av === 0 && bv === 0) return 0;
-          if (av === 0) return 1;
-          if (bv === 0) return -1;
-          return bv - av;
-        } else if (sort === 'rating') {
-          av = parseFloat(a.dataset.rating) || 0;
-          bv = parseFloat(b.dataset.rating) || 0;
-          if (av === 0 && bv === 0) return 0;
-          if (av === 0) return 1;
-          if (bv === 0) return -1;
-          return bv - av;
-        } else if (sort === 'time') {
-          av = parseInt(a.dataset.time, 10) || 9999;
-          bv = parseInt(b.dataset.time, 10) || 9999;
-          return av - bv;
-        }
-        return 0;
-      });
-      cards.forEach(function (card) { grid.appendChild(card); });
+    cards.forEach(function (card) {
+      var hay = card.dataset.search;
+      var show = terms.every(function (t) { return hay.indexOf(t) !== -1; }) &&
+                 filters.every(function (f) { return FILTERS[f](card); });
+      card.hidden = !show;
+      if (show) visible++;
+    });
+
+    var sorted = cards.slice().sort(SORTS[sortSelect.value] || SORTS.date);
+    sorted.forEach(function (card) { grid.insertBefore(card, noResults); });
+
+    var filtered = terms.length || filters.length;
+    countEl.textContent = filtered
+      ? visible + ' of ' + cards.length + ' recipes'
+      : cards.length + ' recipes';
+    noResults.style.display = visible === 0 ? 'block' : 'none';
+    searchBar.classList.toggle('has-value', input.value.length > 0);
+
+    C.save('home-view', { sort: sortSelect.value, filters: filters });
+  }
+
+  input.addEventListener('input', render);
+  sortSelect.addEventListener('change', render);
+  chips.forEach(function (chip) {
+    chip.addEventListener('click', function () {
+      chip.setAttribute('aria-pressed', String(chip.getAttribute('aria-pressed') !== 'true'));
+      render();
     });
   });
+
+  document.getElementById('search-clear').addEventListener('click', function () {
+    input.value = '';
+    render();
+    input.focus();
+  });
+
+  document.getElementById('reset-filters').addEventListener('click', function () {
+    input.value = '';
+    chips.forEach(function (c) { c.setAttribute('aria-pressed', 'false'); });
+    render();
+  });
+
+  // "/" focuses search, Escape clears it
+  document.addEventListener('keydown', function (e) {
+    if (e.key === '/' && document.activeElement !== input && !/input|textarea|select/i.test(document.activeElement.tagName)) {
+      e.preventDefault();
+      input.focus();
+    } else if (e.key === 'Escape' && document.activeElement === input && input.value) {
+      input.value = '';
+      render();
+    }
+  });
+
+  // Pick a random recipe from what's currently visible
+  document.getElementById('surprise-btn').addEventListener('click', function () {
+    var pool = cards.filter(function (c) { return !c.hidden; });
+    if (!pool.length) pool = cards;
+    var pick = pool[Math.floor(Math.random() * pool.length)];
+    window.location.href = pick.href;
+  });
+
+  // Support ?q= / ?tag= links
+  var params = new URLSearchParams(window.location.search);
+  var q = params.get('q') || params.get('tag');
+  if (q) input.value = q;
+
+  render();
 })();
 </script>
