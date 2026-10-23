@@ -1,0 +1,5 @@
+{%- comment -%}Formats a minutes value ("30", "45 minutes", "10 mins") as "30 min" / "1 hr 15 min".{%- endcomment -%}
+{%- assign _n = include.m | plus: 0 -%}
+{%- if _n > 0 -%}
+  {%- if _n < 60 -%}{{ _n }} min{%- else -%}{%- assign _h = _n | divided_by: 60 -%}{%- assign _r = _n | modulo: 60 -%}{{ _h }} hr{% if _r > 0 %} {{ _r }} min{% endif %}{%- endif -%}
+{%- else -%}{{ include.m }}{%- endif -%}
