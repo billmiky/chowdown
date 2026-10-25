@@ -43,6 +43,9 @@ window.Chowdown = (function () {
     var body = {};
     try { body = await resp.json(); } catch (e) {}
     if (resp.status === 401) throw new Error('GitHub token was rejected — update it on the <a href="' + BASE + '/import/">Import page</a>');
+    if (resp.status === 403 || resp.status === 404) {
+      throw new Error('GitHub token lacks permission — it needs <em>Actions: Read and write</em> and <em>Contents: Read and write</em> on ' + REPO + ' (or the <em>repo</em> + <em>workflow</em> scopes for a classic token). Update it on the <a href="' + BASE + '/import/">Import page</a>');
+    }
     throw new Error(body.message || ('HTTP ' + resp.status));
   }
 
