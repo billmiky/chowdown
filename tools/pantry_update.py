@@ -6,6 +6,7 @@ Actions:
   remove_staple  – remove an item from pantry staples
   remove_on_hand – remove a single on_hand item
   clear_on_hand  – remove all on_hand items (fresh start after shopping)
+  normalize_on_hand – tidy receipt-style names (drop brands, "organic", counts) and merge duplicates
 
 Usage:
   python tools/pantry_update.py --action add_staple --item "olive oil"
@@ -48,7 +49,7 @@ def main():
     parser = argparse.ArgumentParser(description="Update _data/pantry.yml")
     parser.add_argument(
         '--action', required=True,
-        choices=['add_staple', 'remove_staple', 'remove_on_hand', 'clear_on_hand'],
+        choices=['add_staple', 'remove_staple', 'remove_on_hand', 'clear_on_hand', 'normalize_on_hand'],
     )
     parser.add_argument('--item', default='', help='Item name (not required for clear_on_hand)')
     args = parser.parse_args()
@@ -94,6 +95,18 @@ def main():
         count = len(data['on_hand'])
         data['on_hand'] = []
         print(f"Cleared {count} on_hand item(s)")
+
+    elif args.action == 'normalize_on_hand':
+        from parse_receipt import tidy_item_name
+        seen, tidy = set(), []
+        for entry in data['on_hand']:
+            name = tidy_item_name(entry.get('item', '')).lower()
+            if len(name) < 3 or name in seen:
+                continue
+            seen.add(name)
+            tidy.append({**entry, 'item': name})
+        print(f"Normalized on_hand: {len(data['on_hand'])} -> {len(tidy)} item(s)")
+        data['on_hand'] = tidy
 
     save_pantry(data, pantry_path)
     print(f"Pantry saved — {len(data['staples'])} staple(s), {len(data['on_hand'])} on_hand item(s)")

@@ -444,6 +444,38 @@ permalink: /pantry/
   .category-label.cat-frozen  { background: #457b9d; }
   .category-label.cat-staples { background: #666; }
   .category-label.cat-other   { background: #aaa; color: #000; }
+
+  /* ---- What can I make ---- */
+  .cook-filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
+  .cook-filter {
+    font-family: 'Jost', sans-serif; font-size: 0.7rem; font-weight: 900; text-transform: uppercase;
+    letter-spacing: 0.08em; padding: 8px 14px; background: #fff; color: #000;
+    border: 2px solid #000; cursor: pointer;
+  }
+  .cook-filter.active { background: #000; color: #fff; }
+  .cook-card { border: 3px solid #000; padding: 16px 18px; margin-bottom: 16px; max-width: 760px; background: #fff; }
+  .cook-card-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+  .cook-title {
+    font-family: 'Jost', sans-serif; font-size: 1.05rem; font-weight: 900; text-transform: uppercase;
+    letter-spacing: 0.03em; color: #000; text-decoration: none;
+  }
+  .cook-title:hover { color: #E63946; }
+  .cook-score { font-family: 'Jost', sans-serif; font-size: 0.7rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.1em; color: #888; white-space: nowrap; }
+  .cook-score.ready { color: #1a6b35; }
+  .cook-bar { height: 6px; background: #e8e8e8; margin: 10px 0; }
+  .cook-bar > span { display: block; height: 100%; background: #2A9D8F; }
+  .cook-row { font-family: 'Jost', sans-serif; font-size: 0.78rem; color: #444; margin: 6px 0 0; }
+  .cook-row strong { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.12em; color: #999; margin-right: 6px; }
+  .chip {
+    display: inline-block; font-family: 'Jost', sans-serif; font-size: 0.72rem; font-weight: 700;
+    padding: 3px 9px; margin: 3px 4px 0 0; border: 2px solid #000; background: #fff; color: #000;
+  }
+  .chip.missing { border-color: #E63946; color: #E63946; cursor: pointer; }
+  .chip.missing:hover { background: #E63946; color: #fff; }
+  .chip.missing:disabled { opacity: 0.5; cursor: default; }
+  .chip.useup { border-color: #2A9D8F; color: #2A9D8F; }
+  .cook-add-all { margin-top: 10px; font-family: 'Jost', sans-serif; font-size: 0.68rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.08em; padding: 6px 12px; background: #000; color: #fff; border: 2px solid #000; cursor: pointer; }
+  .cook-add-all:disabled { opacity: 0.4; cursor: default; }
 </style>
 
 <div class="bauhaus-home-layout">
@@ -462,7 +494,8 @@ permalink: /pantry/
 
     <!-- Tabs -->
     <div class="tabs">
-      <button class="tab-btn active" onclick="switchTab('staples', this)">Staples</button>
+      <button class="tab-btn active" onclick="switchTab('cook', this)">What Can I Make</button>
+      <button class="tab-btn" onclick="switchTab('staples', this)">Staples</button>
       <button class="tab-btn" onclick="switchTab('on-hand', this)">On Hand
         {% if pantry.on_hand and pantry.on_hand.size > 0 %}
           <span style="background:#E63946;color:#fff;font-size:0.6rem;padding:1px 6px;margin-left:6px;border-radius:99px;">{{ pantry.on_hand | size }}</span>
@@ -471,8 +504,22 @@ permalink: /pantry/
       <button class="tab-btn" onclick="switchTab('import', this)">Import Receipt</button>
     </div>
 
+    <!-- ========== WHAT CAN I MAKE TAB ========== -->
+    <div id="tab-cook" class="tab-panel active">
+      <script type="application/json" id="recipes-data">[{% for r in site.recipes %}{"title":{{ r.title | jsonify }},"url":{{ r.url | relative_url | jsonify }},"rating":{{ r.rating | default: 0 | jsonify }},"ingredients":{{ r.ingredients | default: empty | jsonify }}}{% unless forloop.last %},{% endunless %}{% endfor %}]</script>
+      <p class="list-label" id="cook-summary"></p>
+      <div class="cook-filters" id="cook-filters">
+        <button class="cook-filter active" data-max="0">Ready now</button>
+        <button class="cook-filter" data-max="2">Missing 1&ndash;2</button>
+        <button class="cook-filter" data-max="4">Missing 3&ndash;4</button>
+        <button class="cook-filter" data-max="99">Everything</button>
+      </div>
+      <div id="cook-results"></div>
+      <div class="status-msg" id="cook-status" style="margin-top:12px;"></div>
+    </div>
+
     <!-- ========== STAPLES TAB ========== -->
-    <div id="tab-staples" class="tab-panel active">
+    <div id="tab-staples" class="tab-panel">
       <p class="list-label">{{ pantry.staples | size }} items &mdash; always in your kitchen</p>
 
       {% if pantry.staples and pantry.staples.size > 0 %}
@@ -547,6 +594,7 @@ permalink: /pantry/
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
+<script src="{{ '/assets/js/pantry-match.js' | relative_url }}"></script>
 <script>
 var REPO = 'billmiky/chowdown';
 var BRANCH = 'main';
@@ -1027,4 +1075,122 @@ function renderOnHand() {
 }
 
 document.addEventListener('DOMContentLoaded', renderOnHand);
+
+/* ---- What can I make ---- */
+var cookMax = 0;
+
+function pantryForMatching() {
+  var onHand = JSON.parse(document.getElementById('on-hand-data').textContent || '[]') || [];
+  var staples = JSON.parse(document.getElementById('staples-data').textContent || '[]') || [];
+  var out = [], seen = {};
+  function push(raw, staple) {
+    var key = PantryMatch.matchKey(raw);
+    if (!key || seen[key]) return;
+    seen[key] = true;
+    out.push({ key: key, label: PantryMatch.prettyName(raw), staple: staple });
+  }
+  staples.forEach(function (s) { push(s, true); });
+  onHand.forEach(function (e) { push(e.item || '', false); });
+  return out;
+}
+
+function renderCook() {
+  var recipes = JSON.parse(document.getElementById('recipes-data').textContent || '[]');
+  var pantry = pantryForMatching();
+  var scored = PantryMatch.scoreRecipes(recipes, pantry);
+  var container = document.getElementById('cook-results');
+  var summary = document.getElementById('cook-summary');
+
+  var ready = scored.filter(function (s) { return !s.missing.length; }).length;
+  var close = scored.filter(function (s) { return s.missing.length > 0 && s.missing.length <= 2; }).length;
+  summary.textContent = ready + ' ready now \u00b7 ' + close + ' missing just 1\u20132 things';
+
+  var minMissing = cookMax === 0 ? 0 : cookMax === 2 ? 1 : cookMax === 4 ? 3 : 0;
+  var shown = scored.filter(function (s) {
+    var m = s.missing.length;
+    return cookMax === 99 ? true : (m >= minMissing && m <= cookMax);
+  });
+  // Fewest missing first; then recipes that use up on-hand items; then rating.
+  shown.sort(function (a, b) {
+    return a.missing.length - b.missing.length ||
+      b.usesOnHand.length - a.usesOnHand.length ||
+      (+b.recipe.rating || 0) - (+a.recipe.rating || 0);
+  });
+
+  container.innerHTML = '';
+  if (!shown.length) {
+    container.innerHTML = '<div class="empty-state">Nothing matches this filter yet. Try &ldquo;Missing 1&ndash;2&rdquo;, or import a receipt.</div>';
+    return;
+  }
+  if (cookMax === 99) shown = shown.slice(0, 40);
+
+  shown.forEach(function (s) {
+    var card = document.createElement('div');
+    card.className = 'cook-card';
+    var pct = Math.round(s.pct * 100);
+    var ok = !s.missing.length;
+    card.innerHTML =
+      '<div class="cook-card-head"><a class="cook-title" href="' + escapeHtml(s.recipe.url) + '">' + escapeHtml(s.recipe.title) + '</a>' +
+      '<span class="cook-score' + (ok ? ' ready' : '') + '">' + (ok ? 'Ready to cook' : s.have.length + ' of ' + s.total + ' ingredients') + '</span></div>' +
+      '<div class="cook-bar"><span style="width:' + pct + '%"></span></div>';
+
+    if (s.usesOnHand.length) {
+      var up = document.createElement('p');
+      up.className = 'cook-row';
+      up.innerHTML = '<strong>Uses what you have</strong>' + s.usesOnHand.map(function (p) { return '<span class="chip useup">' + escapeHtml(p.label) + '</span>'; }).join('');
+      card.appendChild(up);
+    }
+    if (s.missing.length) {
+      var miss = document.createElement('p');
+      miss.className = 'cook-row';
+      miss.innerHTML = '<strong>Need</strong>';
+      s.missing.forEach(function (name) {
+        var b = document.createElement('button');
+        b.className = 'chip missing';
+        b.type = 'button';
+        b.title = 'Add to grocery list';
+        b.textContent = '+ ' + name;
+        b.onclick = function () { addMissing([name], [b], b); };
+        miss.appendChild(b);
+      });
+      card.appendChild(miss);
+      var all = document.createElement('button');
+      all.className = 'cook-add-all';
+      all.type = 'button';
+      all.textContent = 'Add all ' + s.missing.length + ' to grocery list';
+      all.onclick = function () { addMissing(s.missing, Array.prototype.slice.call(miss.querySelectorAll('.chip.missing')), all); };
+      card.appendChild(all);
+    }
+    container.appendChild(card);
+  });
+}
+
+async function addMissing(names, chips, trigger) {
+  var status = document.getElementById('cook-status');
+  status.className = 'status-msg';
+  status.textContent = 'Adding to grocery list\u2026';
+  trigger.disabled = true;
+  try {
+    for (var i = 0; i < names.length; i++) await updateGrocery(names[i]);
+    chips.forEach(function (c) { c.disabled = true; c.textContent = '\u2713 ' + c.textContent.replace(/^\+ /, ''); });
+    status.className = 'status-msg ok';
+    status.textContent = '\u2713 Added ' + names.length + ' item' + (names.length !== 1 ? 's' : '') + ' to your grocery list.';
+  } catch (e) {
+    trigger.disabled = false;
+    status.className = 'status-msg err';
+    status.innerHTML = '\u2717 ' + e.message;
+  }
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+  renderCook();
+  document.getElementById('cook-filters').addEventListener('click', function (ev) {
+    var btn = ev.target.closest('.cook-filter');
+    if (!btn) return;
+    document.querySelectorAll('.cook-filter').forEach(function (b) { b.classList.remove('active'); });
+    btn.classList.add('active');
+    cookMax = +btn.dataset.max;
+    renderCook();
+  });
+});
 </script>
