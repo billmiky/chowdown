@@ -317,18 +317,50 @@ permalink: /import/
       kid_friendly: document.getElementById('kid_friendly').value,
     };
 
+    var startedAt = Date.now() - 15000;   // allow for clock skew between this device and GitHub
     try {
       await C.triggerWorkflow('import-recipe.yml', inputs);
-      status(importStatus, '✓ Import started — <a href="https://github.com/' + C.REPO +
-        '/actions/workflows/import-recipe.yml" target="_blank" rel="noopener">watch progress</a>', 'ok');
       form.reset();
+      watchRun(startedAt, importStatus, btn);
+      return;
     } catch (err) {
       status(importStatus, '✗ ' + err.message, 'err');
       if (!C.token()) section.open = true;
-    } finally {
-      btn.disabled = false;
     }
+    btn.disabled = false;
   });
+
+  // Follow the workflow run so a failed import is reported here instead of silently
+  async function watchRun(startedAt, el, btn) {
+    var base = 'https://api.github.com/repos/' + C.REPO + '/actions/workflows/import-recipe.yml/runs';
+    var runsUrl = 'https://github.com/' + C.REPO + '/actions/workflows/import-recipe.yml';
+    var link = function (href, text) { return '<a href="' + href + '" target="_blank" rel="noopener">' + text + '</a>'; };
+    status(el, 'Import started — checking progress…');
+    try {
+      for (var i = 0; i < 40; i++) {                       // ~3 minutes
+        await new Promise(function (r) { setTimeout(r, i < 3 ? 3000 : 5000); });
+        var resp = await fetch(base + '?event=workflow_dispatch&per_page=5', {
+          headers: { 'Authorization': 'token ' + C.token(), 'Accept': 'application/vnd.github.v3+json' },
+        });
+        if (!resp.ok) break;
+        var runs = (await resp.json()).workflow_runs || [];
+        var run = runs.filter(function (r) { return new Date(r.created_at).getTime() >= startedAt; })
+                      .sort(function (a, b) { return new Date(a.created_at) - new Date(b.created_at); })[0];
+        if (!run) continue;
+        if (run.status !== 'completed') { status(el, 'Importing… ' + link(run.html_url, 'watch live')); continue; }
+        if (run.conclusion === 'success') {
+          status(el, '✓ Imported — the site rebuilds in about a minute. ' + link(C.BASE + '/', 'Open recipes'), 'ok');
+        } else {
+          status(el, '✗ Import failed — ' + link(run.html_url, 'see why') +
+            '. Sites that block automated access can’t be imported.', 'err');
+        }
+        btn.disabled = false;
+        return;
+      }
+    } catch (e) { /* fall through to the generic message */ }
+    status(el, 'Import started — ' + link(runsUrl, 'check progress on GitHub'), 'ok');
+    btn.disabled = false;
+  }
 
   refreshTokenState();
 })();
