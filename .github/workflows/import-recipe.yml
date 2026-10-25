@@ -41,17 +41,24 @@ jobs:
           python-version: "3.11"
 
       - name: Install dependencies
-        run: pip install recipe-scrapers requests pyyaml
+        run: pip install recipe-scrapers requests pyyaml curl_cffi
 
       - name: Scrape and write recipe
         run: |
           python tools/importer/scrape.py \
-            --url "${{ inputs.url }}" \
-            --tags "${{ inputs.tags }}" \
-            --season "${{ inputs.season }}" \
-            --rating "${{ inputs.rating }}" \
-            --difficulty "${{ inputs.difficulty }}" \
-            --kid_friendly "${{ inputs.kid_friendly }}"
+            --url "$RECIPE_URL" \
+            --tags "$RECIPE_TAGS" \
+            --season "$RECIPE_SEASON" \
+            --rating "$RECIPE_RATING" \
+            --difficulty "$RECIPE_DIFFICULTY" \
+            --kid_friendly "$RECIPE_KID_FRIENDLY"
+        env:
+          RECIPE_URL: ${{ inputs.url }}
+          RECIPE_TAGS: ${{ inputs.tags }}
+          RECIPE_SEASON: ${{ inputs.season }}
+          RECIPE_RATING: ${{ inputs.rating }}
+          RECIPE_DIFFICULTY: ${{ inputs.difficulty }}
+          RECIPE_KID_FRIENDLY: ${{ inputs.kid_friendly }}
 
       - name: Commit recipe
         uses: stefanzweifel/git-auto-commit-action@v5
