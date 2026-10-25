@@ -21,93 +21,81 @@ on_hand:
 - item: provolone cheese
   source: wholefoods
   added: '2026-05-13'
-- item: organic honeycrisp apple 3
+- item: apple
   source: wholefoods
   added: '2026-05-13'
-- item: nature's own butterbread
+- item: butterbread
   source: wholefoods
   added: '2026-05-13'
-- item: teddie peanut butter
+- item: peanut butter
   source: wholefoods
   added: '2026-05-13'
 - item: red raspberries
   source: wholefoods
   added: '2026-05-13'
-- item: cascadian farm
+- item: baby arugula greens
   source: wholefoods
   added: '2026-05-13'
-- item: organicgirl baby arugula greens
+- item: blackberries
   source: wholefoods
   added: '2026-05-13'
-- item: driscoll's sweetest batch blackberries - 1
+- item: lettuce
   source: wholefoods
   added: '2026-05-13'
-- item: gotham greens gourmet medley lettuce
+- item: peanut chocolate
   source: wholefoods
   added: '2026-05-13'
-- item: bonne maman peanut chocolate 1
+- item: greens kale green
   source: wholefoods
   added: '2026-05-13'
-- item: greens kale green organic
+- item: vanilla with see's candies ice cream
   source: wholefoods
   added: '2026-05-13'
-- item: mcconnells vanilla with see's candies ice cream
+- item: crackers super seed crackers
   source: wholefoods
   added: '2026-05-13'
-- item: mary's gone crackers super seed crackers
+- item: blueberries
   source: wholefoods
   added: '2026-05-13'
-- item: driscoll's sweetest batch blueberries - 1
+- item: avocado
   source: wholefoods
   added: '2026-05-13'
-- item: avocado hass organic
-  source: wholefoods
-  added: '2026-05-13'
-- item: organic broccoli
+- item: broccoli
   source: wholefoods
   added: '2026-05-14'
 - item: pepper jack cheese
   source: wholefoods
   added: '2026-05-14'
-- item: organic honeycrisp apple 2
-  source: wholefoods
-  added: '2026-05-14'
-- item: organic zucchini squash 1
-  source: wholefoods
-  added: '2026-05-14'
-- item: boulder canyon
+- item: zucchini squash
   source: wholefoods
   added: '2026-05-14'
 - item: salted butter
   source: wholefoods
   added: '2026-05-14'
-- item: de cecco pasta radiatori pasta
+- item: pasta radiatori pasta
   source: wholefoods
   added: '2026-05-14'
 - item: crispy green freeze dried strawberry
   source: wholefoods
   added: '2026-05-14'
-- item: organic raspberries
+- item: raspberries
   source: wholefoods
   added: '2026-05-14'
 - item: the good crisp company sour cream & onion gluten-free potato chips
   source: wholefoods
   added: '2026-05-14'
-- item: bonne maman preserve
+- item: preserve
   source: wholefoods
   added: '2026-05-14'
-- item: organic mini cucumbers
+- item: mini cucumbers
   source: wholefoods
   added: '2026-05-14'
-- item: jumbo blueberries
+- item: ben & jerry's phish food chocolate ice cream
   source: wholefoods
   added: '2026-05-14'
-- item: ben & jerry's phish food chocolate ice cream 1
+- item: blackberried
   source: wholefoods
   added: '2026-05-14'
-- item: organic blackberried 1
-  source: wholefoods
-  added: '2026-05-14'
-- item: late july sea salt organic tortilla chips
+- item: late july sea salt tortilla chips
   source: wholefoods
   added: '2026-05-14'

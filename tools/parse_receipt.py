@@ -64,6 +64,24 @@ _STORE_BRAND_RE = re.compile(
 )
 
 
+# Shopper-facing qualifiers and brands that hide the actual food ("organic honeycrisp apple 3")
+_QUALIFIER_RE = re.compile(
+    r"\b(organic|organicgirl|fresh|jumbo|gourmet|medley|large|small|medium|"
+    r"honeycrisp|hass|driscoll'?s|sweetest batch|cascadian farm|bonne maman|teddie|gotham greens|"
+    r"nature'?s own|mary'?s gone|mcconnell'?s|de cecco|boulder canyon)\b",
+    re.IGNORECASE,
+)
+
+
+def tidy_item_name(name: str) -> str:
+    """Final pass on a cleaned receipt name: drop brands/qualifiers and stray counts."""
+    name = _QUALIFIER_RE.sub('', name)
+    name = re.sub(r'\s[-\u2013]\s*\d*\s*$', '', name)   # "blackberries - 1"
+    name = re.sub(r'\s+\d+\s*$', '', name)               # trailing "3"
+    name = re.sub(r'\s+', ' ', name).strip().strip('.,;:|-/&')
+    return name
+
+
 def clean_item_name(raw: str) -> str:
     """Strip everything except the core ingredient name from a receipt line."""
     # Remove price patterns
@@ -94,7 +112,7 @@ def clean_item_name(raw: str) -> str:
     raw = re.sub(r'^[•·\-\*]\s*', '', raw)
     # Collapse whitespace and strip punctuation noise
     raw = re.sub(r'\s+', ' ', raw).strip().strip('.,;:|-/')
-    return raw
+    return tidy_item_name(raw) or raw
 
 
 def is_valid_item(name: str) -> bool:
