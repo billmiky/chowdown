@@ -1,4 +1,414 @@
 ---
-layout: home
-title: Recipes
+layout: default
+title: Tonight
+permalink: /
 ---
+
+{% assign plan = site.data.meal_plan %}
+{% assign days = "monday,tuesday,wednesday,thursday,friday,saturday,sunday" | split: "," %}
+{% assign week_start = plan.week_of | date: '%s' | plus: 43200 %}
+
+<style>
+  .tonight-wrap { max-width: 1180px; }
+
+  /* ---- Eyebrow ---- */
+  .tonight-eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+    margin-bottom: 22px;
+  }
+
+  .eyebrow-dots { display: flex; gap: 6px; }
+  .eyebrow-dots span { width: 12px; height: 12px; border-radius: 50%; }
+
+  .eyebrow-text {
+    font-size: 0.78rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: var(--muted);
+  }
+
+  /* ---- Hero ---- */
+  .tonight-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    background: var(--card);
+    border: var(--border-heavy);
+    box-shadow: 12px 12px 0 0 var(--red);
+    margin-bottom: 64px;
+    animation: rise 0.45s ease-out both;
+  }
+
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: none; }
+  }
+
+  .hero-photo {
+    position: relative;
+    display: block;
+    background: #e6e1d7;
+    border-right: var(--border-heavy);
+    min-height: 420px;
+    overflow: hidden;
+  }
+
+  .hero-photo img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.5s ease;
+  }
+
+  .hero-photo:hover img { transform: scale(1.04); }
+
+  .hero-photo .shape {
+    position: absolute;
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  .hero-photo .shape.circle { width: 74px; height: 74px; border-radius: 50%; background: var(--yellow); left: -22px; bottom: -22px; border: var(--border); }
+  .hero-photo .shape.square { width: 46px; height: 46px; background: var(--teal); right: 22px; top: 22px; border: var(--border); }
+
+  .hero-body {
+    display: flex;
+    flex-direction: column;
+    padding: 40px 40px 36px;
+    min-width: 0;
+  }
+
+  .hero-kicker {
+    align-self: flex-start;
+    font-size: 0.7rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    background: var(--red);
+    color: #fff;
+    padding: 5px 10px;
+    margin-bottom: 18px;
+  }
+
+  .hero-title {
+    font-size: clamp(2rem, 3.6vw, 3.1rem);
+    font-weight: 900;
+    line-height: 1;
+    text-transform: uppercase;
+    letter-spacing: -0.005em;
+    margin: 0 0 20px;
+    overflow-wrap: break-word;
+    hyphens: auto;
+  }
+
+  .hero-title a { text-decoration: none; }
+  .hero-title a:hover { color: var(--red); }
+
+  .hero-facts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 24px;
+  }
+
+  .hero-facts .stars { font-size: 1.05rem; margin-right: 4px; }
+
+  .hero-ingredients-label {
+    font-size: 0.68rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: var(--muted);
+    padding-top: 18px;
+    border-top: 3px solid var(--ink);
+    margin: 0 0 10px;
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .hero-ingredients {
+    list-style: none;
+    margin: 0 0 28px;
+    padding: 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px 22px;
+    font-size: 0.88rem;
+    font-weight: 500;
+  }
+
+  .hero-ingredients li {
+    position: relative;
+    padding-left: 16px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .hero-ingredients li::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0.55em;
+    width: 7px; height: 7px;
+    background: var(--red);
+  }
+
+  .hero-ingredients li.more { color: var(--muted); font-weight: 700; }
+  .hero-ingredients li.more::before { background: var(--teal); }
+
+  .hero-cta { margin-top: auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(168px, 1fr)); gap: 14px; padding-right: 6px; }
+  .hero-cta .bauhaus-btn { white-space: nowrap; }
+
+  .hero-cta .bauhaus-btn { text-decoration: none; display: inline-flex; align-items: center; justify-content: center; }
+
+  /* ---- Empty / rest states ---- */
+  .tonight-empty {
+    background: var(--card);
+    border: var(--border-heavy);
+    border-style: dashed;
+    border-color: #b9b3a8;
+    padding: 64px 32px;
+    text-align: center;
+    margin-bottom: 64px;
+  }
+
+  .tonight-empty h2 {
+    font-size: clamp(1.8rem, 4vw, 2.8rem);
+    font-weight: 900;
+    text-transform: uppercase;
+    line-height: 1;
+    margin: 0 0 12px;
+  }
+
+  .tonight-empty p { color: var(--muted); font-weight: 500; margin: 0 0 24px; }
+  .tonight-empty .bauhaus-btn { text-decoration: none; display: inline-flex; }
+
+  /* ---- Coming up ---- */
+  .coming-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    border-bottom: 5px solid var(--ink);
+    padding-bottom: 12px;
+    margin-bottom: 22px;
+  }
+
+  .coming-header h2 { font-size: 1.3rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.04em; margin: 0; }
+
+  .coming-header a {
+    font-size: 0.72rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    text-decoration: none;
+    border-bottom: 2px solid var(--red);
+  }
+
+  .coming-header a:hover { color: var(--red); }
+
+  .coming-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 16px;
+  }
+
+  .coming-card {
+    display: flex;
+    flex-direction: column;
+    background: var(--card);
+    border: var(--border);
+    text-decoration: none;
+    color: inherit;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+
+  .coming-card:hover { transform: translate(-4px, -4px); box-shadow: 8px 8px 0 0 var(--ink); }
+
+  .coming-day {
+    background: var(--ink);
+    color: #fff;
+    font-size: 0.66rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    padding: 8px 12px;
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .coming-day span { font-weight: 500; opacity: 0.75; }
+  .coming-card:first-child .coming-day { background: var(--teal); }
+
+  .coming-card img { width: 100%; aspect-ratio: 16 / 10; object-fit: cover; border-bottom: var(--border); background: #e6e1d7; }
+
+  .coming-title { font-size: 0.9rem; font-weight: 800; text-transform: uppercase; line-height: 1.15; margin: 0; padding: 12px; }
+
+  .coming-card.rest { border-style: dashed; border-color: #b9b3a8; background: transparent; }
+  .coming-card.rest:hover { box-shadow: none; transform: none; }
+  .coming-card.rest .coming-day { background: none; color: var(--muted); border-bottom: 3px dashed #b9b3a8; }
+  .coming-card.rest .coming-title { color: var(--faint); font-weight: 500; text-transform: none; }
+
+  @media (max-width: 900px) {
+    .tonight-hero { grid-template-columns: 1fr; box-shadow: 8px 8px 0 0 var(--red); margin-bottom: 48px; }
+    .hero-photo { min-height: 0; aspect-ratio: 4 / 3; border-right: none; border-bottom: var(--border-heavy); }
+    .hero-body { padding: 26px 20px 24px; }
+    .hero-ingredients { grid-template-columns: 1fr; }
+    .coming-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  }
+
+  @media (max-width: 480px) {
+    .coming-grid { grid-template-columns: 1fr; }
+    .coming-card { flex-direction: row; flex-wrap: wrap; }
+    .coming-day { width: 100%; }
+    .coming-card img { width: 108px; aspect-ratio: 1; border-bottom: none; border-right: var(--border); flex-shrink: 0; }
+    .coming-title { flex: 1; align-self: center; }
+  }
+</style>
+
+<div class="bauhaus-home-layout">
+
+  {% include sidebar.html %}
+
+  <main class="bauhaus-page-content">
+    <div class="tonight-wrap">
+
+      <div class="tonight-eyebrow">
+        <div class="eyebrow-dots"><span style="background:var(--red)"></span><span style="background:var(--yellow)"></span><span style="background:var(--teal)"></span></div>
+        <span class="eyebrow-text" id="today-label">Dinner</span>
+      </div>
+
+      {% comment %}Every day of the saved week is rendered; the script below reveals the one that matches today.{% endcomment %}
+      {% for day in days %}
+        {% assign day_slug = plan[day] %}
+        {% assign offset = forloop.index0 | times: 86400 %}
+        {% assign day_date = week_start | plus: offset | date: '%b %-d' %}
+        {% assign matched_recipe = nil %}
+        {% if day_slug and day_slug != "" %}
+          {% for r in site.recipes %}
+            {% assign r_slug = r.path | remove: "_recipes/" | remove: ".md" %}
+            {% if r_slug == day_slug %}{% assign matched_recipe = r %}{% endif %}
+          {% endfor %}
+        {% endif %}
+
+        {% if matched_recipe %}
+        {% assign _t = matched_recipe.total_time | default: matched_recipe.cook_time %}
+        {% assign _r = matched_recipe.rating | plus: 0 %}
+        <article class="tonight-hero" data-day="{{ day }}" hidden>
+          <a class="hero-photo" href="{{ matched_recipe.url | relative_url }}" tabindex="-1" aria-hidden="true">
+            {% if matched_recipe.image %}<img src="{{ '/images/' | append: matched_recipe.image | relative_url }}" alt="" decoding="async">{% endif %}
+            <span class="shape circle"></span><span class="shape square"></span>
+          </a>
+          <div class="hero-body">
+            <span class="hero-kicker" data-kicker>Tonight's dinner</span>
+            <h1 class="hero-title"><a href="{{ matched_recipe.url | relative_url }}">{{ matched_recipe.title }}</a></h1>
+            <div class="hero-facts">
+              {% if _r > 0 %}<span class="stars" aria-label="{{ _r }} out of 5 stars">{% for i in (1..5) %}{% if i <= _r %}★{% else %}<span class="off">★</span>{% endif %}{% endfor %}</span>{% endif %}
+              {% if _t %}<span class="badge time">{% include minutes.html m=_t %}</span>{% endif %}
+              {% if matched_recipe.difficulty %}<span class="badge {{ matched_recipe.difficulty }}">{{ matched_recipe.difficulty }}</span>{% endif %}
+              {% if matched_recipe.kid_friendly == true or matched_recipe.kid_friendly == "true" %}<span class="badge kid">Kids</span>{% endif %}
+              {% if matched_recipe.yield %}<span class="badge time">{{ matched_recipe.yield }}</span>{% endif %}
+            </div>
+            {% assign ingredients = matched_recipe.ingredients %}
+            {% if ingredients and ingredients.size > 0 %}
+            <p class="hero-ingredients-label"><span>You'll need</span><span>{{ ingredients.size }} ingredients</span></p>
+            <ul class="hero-ingredients">
+              {% for ing in ingredients limit: 6 %}<li title="{{ ing | escape }}">{{ ing }}</li>{% endfor %}
+              {% if ingredients.size > 6 %}<li class="more">+ {{ ingredients.size | minus: 6 }} more</li>{% endif %}
+            </ul>
+            {% endif %}
+            <div class="hero-cta">
+              <a class="bauhaus-btn" href="{{ matched_recipe.url | relative_url }}">Start cooking</a>
+              <a class="bauhaus-btn ghost" href="{{ '/meal-plan/' | relative_url }}">See the week</a>
+            </div>
+          </div>
+        </article>
+        {% else %}
+        <section class="tonight-empty" data-day="{{ day }}" hidden>
+          <h2>{% if day_slug and day_slug != "" %}Unknown recipe{% else %}Rest night{% endif %}</h2>
+          <p>{% if day_slug and day_slug != "" %}<code>{{ day_slug }}</code> isn't in the recipe collection.{% else %}Nothing is planned for tonight. Takeout, leftovers, or pick something good.{% endif %}</p>
+          <a class="bauhaus-btn" href="{{ '/recipes/' | relative_url }}">Browse recipes</a>
+        </section>
+        {% endif %}
+      {% endfor %}
+
+      <section class="tonight-empty" id="no-plan" hidden>
+        <h2>No plan this week</h2>
+        <p>The saved meal plan is from a previous week. Plan a few dinners and they'll show up here.</p>
+        <a class="bauhaus-btn" href="{{ '/meal-plan/' | relative_url }}">Plan the week</a>
+      </section>
+
+      {% comment %}Upcoming days: same data, revealed for the days after today.{% endcomment %}
+      <section id="coming-up" hidden>
+        <div class="coming-header">
+          <h2>Coming up</h2>
+          <a href="{{ '/meal-plan/' | relative_url }}">Full week →</a>
+        </div>
+        <div class="coming-grid">
+          {% for day in days %}
+            {% assign day_slug = plan[day] %}
+            {% assign offset = forloop.index0 | times: 86400 %}
+            {% assign day_date = week_start | plus: offset | date: '%b %-d' %}
+            {% assign matched_recipe = nil %}
+            {% if day_slug and day_slug != "" %}
+              {% for r in site.recipes %}
+                {% assign r_slug = r.path | remove: "_recipes/" | remove: ".md" %}
+                {% if r_slug == day_slug %}{% assign matched_recipe = r %}{% endif %}
+              {% endfor %}
+            {% endif %}
+            {% if matched_recipe %}
+            <a class="coming-card" data-day="{{ day }}" data-idx="{{ forloop.index0 }}" href="{{ matched_recipe.url | relative_url }}" hidden>
+              <div class="coming-day">{{ day | slice: 0, 3 }}<span>{{ day_date }}</span></div>
+              {% if matched_recipe.image %}<img src="{{ '/images/' | append: matched_recipe.image | relative_url }}" alt="" loading="lazy" decoding="async">{% endif %}
+              <p class="coming-title">{{ matched_recipe.title }}</p>
+            </a>
+            {% else %}
+            <div class="coming-card rest" data-day="{{ day }}" data-idx="{{ forloop.index0 }}" hidden>
+              <div class="coming-day">{{ day | slice: 0, 3 }}<span>{{ day_date }}</span></div>
+              <p class="coming-title">Rest night</p>
+            </div>
+            {% endif %}
+          {% endfor %}
+        </div>
+      </section>
+
+    </div>
+  </main>
+</div>
+
+<script>
+(function () {
+  var C = window.Chowdown;
+  var DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+  var PLAN_WEEK = {{ plan.week_of | jsonify }};
+
+  var now = new Date();
+  var todayIdx = (now.getDay() + 6) % 7;
+  var planIsCurrent = PLAN_WEEK && String(PLAN_WEEK).slice(0, 10) === C.isoDate(C.mondayOf(now));
+
+  document.getElementById('today-label').textContent =
+    now.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
+
+  if (!planIsCurrent) {
+    document.getElementById('no-plan').hidden = false;
+    return;
+  }
+
+  var today = document.querySelector('[data-day="' + DAYS[todayIdx] + '"]:not(.coming-card)');
+  if (today) today.hidden = false;
+
+  var upcoming = document.querySelectorAll('.coming-card');
+  var shown = 0;
+  upcoming.forEach(function (card) {
+    if (+card.dataset.idx > todayIdx) { card.hidden = false; shown++; }
+  });
+  document.getElementById('coming-up').hidden = shown === 0;
+})();
+</script>

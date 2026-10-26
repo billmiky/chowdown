@@ -265,7 +265,7 @@ permalink: /meal-plan/
           </div>
           <div class="day-empty-body">
             <span class="rest-label">Rest night</span>
-            <a class="pick-link" href="{{ '/' | relative_url }}">+ Pick a recipe</a>
+            <a class="pick-link" href="{{ '/recipes/' | relative_url }}">+ Pick a recipe</a>
           </div>
         </div>
         {% endif %}
@@ -339,7 +339,7 @@ permalink: /meal-plan/
         card.classList.add('empty');
         card.querySelector('.day-card-link, .day-body').outerHTML =
           '<div class="day-empty-body"><span class="rest-label">Rest night</span>' +
-          '<a class="pick-link" href="' + C.BASE + '/">+ Pick a recipe</a></div>';
+          '<a class="pick-link" href="' + C.BASE + '/recipes/">+ Pick a recipe</a></div>';
         btn.remove();
         C.toast('Removed from ' + day.charAt(0).toUpperCase() + day.slice(1), 'ok');
       } catch (err) {

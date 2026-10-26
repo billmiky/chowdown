@@ -5,7 +5,7 @@ layout: default
 {% assign _slug = page.path | remove: "_recipes/" | remove: ".md" %}
 {% assign _rating = page.rating | plus: 0 %}
 
-<a href="{{ '/' | relative_url }}" class="back-btn" id="back-btn">
+<a href="{{ '/recipes/' | relative_url }}" class="back-btn" id="back-btn">
   <span aria-hidden="true">←</span> Recipes
 </a>
 

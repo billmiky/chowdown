@@ -349,7 +349,7 @@ permalink: /import/
         if (!run) continue;
         if (run.status !== 'completed') { status(el, 'Importing… ' + link(run.html_url, 'watch live')); continue; }
         if (run.conclusion === 'success') {
-          status(el, '✓ Imported — the site rebuilds in about a minute. ' + link(C.BASE + '/', 'Open recipes'), 'ok');
+          status(el, '✓ Imported — the site rebuilds in about a minute. ' + link(C.BASE + '/recipes/', 'Open recipes'), 'ok');
         } else {
           status(el, '✗ Import failed — ' + link(run.html_url, 'see why') +
             '. Sites that block automated access can’t be imported.', 'err');
