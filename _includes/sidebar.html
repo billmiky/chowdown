@@ -183,8 +183,13 @@
       <span class="title-sub">Recipe Collection</span>
     </a>
     <nav class="main-nav" aria-label="Main">
-      {% assign _home = false %}{% if page.url == "/" or page.url == "/index.html" or page.url contains "/recipes/" %}{% assign _home = true %}{% endif %}
-      <a href="{{ '/' | relative_url }}" class="nav-item{% if _home %} active{% endif %}"{% if _home %} aria-current="page"{% endif %}>
+      {% assign _tonight = false %}{% if page.url == "/" or page.url == "/index.html" %}{% assign _tonight = true %}{% endif %}
+      {% assign _recipes = false %}{% if page.url == "/recipes/" or page.url contains "/recipes/" %}{% assign _recipes = true %}{% endif %}
+      <a href="{{ '/' | relative_url }}" class="nav-item{% if _tonight %} active{% endif %}"{% if _tonight %} aria-current="page"{% endif %}>
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/></svg>
+        <span>Tonight</span>
+      </a>
+      <a href="{{ '/recipes/' | relative_url }}" class="nav-item{% if _recipes %} active{% endif %}"{% if _recipes %} aria-current="page"{% endif %}>
         <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><rect x="3" y="3" width="7.5" height="7.5"/><rect x="13.5" y="3" width="7.5" height="7.5"/><rect x="3" y="13.5" width="7.5" height="7.5"/><rect x="13.5" y="13.5" width="7.5" height="7.5"/></svg>
         <span>Recipes</span>
       </a>
