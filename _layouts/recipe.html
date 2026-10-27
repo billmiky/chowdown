@@ -148,6 +148,7 @@ layout: default
       <div class="planner-actions">
         <button type="button" class="bauhaus-btn" id="plan-btn" aria-expanded="false" aria-controls="day-picker">+ Add to Plan</button>
         <button type="button" class="bauhaus-btn ghost" id="made-btn">✓ We Made This</button>
+        <button type="button" class="bauhaus-btn ghost" id="edit-btn">✎ Edit</button>
         <span id="planner-msg" class="action-status" role="status"></span>
       </div>
       <div class="day-picker" id="day-picker" hidden>
@@ -965,3 +966,5 @@ layout: default
   });
 })();
 </script>
+
+{% include recipe-editor.html %}

@@ -1,0 +1,360 @@
+{%- comment -%}
+  Edit form for a recipe page. Saves through the update-recipe.yml workflow
+  (tools/update_recipe.py), so only the fields listed there can be changed.
+{%- endcomment -%}
+{% assign _edit_slug = page.path | remove: "_recipes/" | remove: ".md" %}
+
+<dialog class="editor" id="recipe-editor" aria-labelledby="editor-title">
+  <form class="editor-form" id="editor-form" method="dialog" novalidate>
+    <header class="editor-head">
+      <h2 id="editor-title">Edit recipe</h2>
+      <button type="button" class="editor-x" id="editor-close" aria-label="Close">✕</button>
+    </header>
+
+    <div class="editor-body">
+      <label class="ef">
+        <span class="ef-label">Title</span>
+        <input type="text" name="title" autocomplete="off">
+      </label>
+
+      <div class="ef-row three">
+        <label class="ef"><span class="ef-label">Prep (min)</span><input type="text" name="prep_time" inputmode="numeric" autocomplete="off"></label>
+        <label class="ef"><span class="ef-label">Cook (min)</span><input type="text" name="cook_time" inputmode="numeric" autocomplete="off"></label>
+        <label class="ef"><span class="ef-label">Total (min)</span><input type="text" name="total_time" inputmode="numeric" autocomplete="off"></label>
+      </div>
+
+      <div class="ef-row">
+        <label class="ef"><span class="ef-label">Servings</span><input type="text" name="yield" placeholder="4 servings" autocomplete="off"></label>
+        <label class="ef">
+          <span class="ef-label">Difficulty</span>
+          <select name="difficulty">
+            <option value="">—</option>
+            <option value="easy">Easy</option>
+            <option value="medium">Medium</option>
+            <option value="hard">Hard</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="ef-row">
+        <label class="ef"><span class="ef-label">Category</span><input type="text" name="category" autocomplete="off"></label>
+        <label class="ef"><span class="ef-label">Cuisine</span><input type="text" name="cuisine" autocomplete="off"></label>
+      </div>
+
+      <label class="ef">
+        <span class="ef-label">Tags <small>separate with commas</small></span>
+        <input type="text" name="tags" autocomplete="off">
+      </label>
+
+      <fieldset class="ef checks">
+        <legend class="ef-label">Season</legend>
+        {% assign _seasons = "all,spring,summer,fall,winter" | split: "," %}
+        {% for s in _seasons %}
+        <label class="ef-check"><input type="checkbox" name="season" value="{{ s }}"> {{ s | capitalize }}</label>
+        {% endfor %}
+        <label class="ef-check kid"><input type="checkbox" name="kid_friendly"> Kid-friendly</label>
+      </fieldset>
+
+      <label class="ef">
+        <span class="ef-label">Ingredients <small>one per line</small></span>
+        <textarea name="ingredients" rows="9" spellcheck="true"></textarea>
+      </label>
+
+      <label class="ef">
+        <span class="ef-label">Directions <small>one step per line</small></span>
+        <textarea name="directions" rows="10" spellcheck="true"></textarea>
+      </label>
+    </div>
+
+    <footer class="editor-foot">
+      <p class="action-status editor-status" id="editor-status" role="status" hidden></p>
+      <div class="editor-actions">
+        <button type="button" class="bauhaus-btn ghost" id="editor-cancel">Cancel</button>
+        <button type="submit" class="bauhaus-btn" id="editor-save">Save changes</button>
+      </div>
+    </footer>
+  </form>
+</dialog>
+
+<style>
+  .editor {
+    width: min(680px, calc(100vw - 32px));
+    max-height: calc(100vh - 48px);
+    padding: 0;
+    border: var(--border-heavy);
+    background: var(--card);
+    color: var(--ink);
+    box-shadow: 10px 10px 0 0 var(--red);
+    font-family: var(--font);
+  }
+
+  .editor::backdrop { background: rgba(17, 17, 17, 0.6); }
+
+  .editor-form { display: flex; flex-direction: column; max-height: calc(100vh - 56px); }
+
+  .editor-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px;
+    background: var(--ink);
+    color: #fff;
+    flex-shrink: 0;
+  }
+
+  .editor-head h2 { margin: 0; font-size: 1rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.1em; }
+
+  .editor-x {
+    width: 36px; height: 36px;
+    background: none; border: 2px solid transparent; color: #fff;
+    font-size: 1rem; font-weight: 900; cursor: pointer;
+  }
+  .editor-x:hover { border-color: #fff; }
+
+  .editor-body {
+    overflow-y: auto;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .ef { display: flex; flex-direction: column; gap: 6px; min-width: 0; border: 0; padding: 0; margin: 0; }
+  .ef-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .ef-row.three { grid-template-columns: repeat(3, 1fr); }
+
+  .ef-label {
+    font-size: 0.68rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--muted);
+    padding: 0;
+  }
+  .ef-label small { font-weight: 500; text-transform: none; letter-spacing: 0.02em; color: var(--faint); margin-left: 4px; }
+
+  .editor input[type="text"], .editor select, .editor textarea {
+    width: 100%;
+    font: inherit;
+    font-size: 1rem;
+    font-weight: 500;
+    padding: 10px 12px;
+    background: var(--paper);
+    color: var(--ink);
+    border: var(--border);
+    border-radius: 0;
+  }
+
+  .editor textarea { resize: vertical; line-height: 1.45; min-height: 120px; }
+  .editor input:focus, .editor select:focus, .editor textarea:focus { outline: 3px solid var(--red); outline-offset: 0; background: #fff; }
+
+  .checks { flex-direction: row; flex-wrap: wrap; gap: 8px 16px; align-items: center; }
+  .checks legend { width: 100%; margin-bottom: 6px; }
+  .ef-check { display: inline-flex; align-items: center; gap: 7px; font-size: 0.9rem; font-weight: 700; cursor: pointer; }
+  .ef-check input { width: 18px; height: 18px; accent-color: var(--red); margin: 0; }
+  .ef-check.kid { margin-left: auto; color: var(--blue); }
+
+  .editor-foot { flex-shrink: 0; padding: 14px 20px 18px; border-top: var(--border-heavy); background: var(--paper); }
+  .editor-status { margin: 0 0 12px; padding: 6px 12px; }
+  .editor-status.ok { border-left-color: var(--teal); }
+  .editor-status.err { border-left-color: var(--red); color: var(--hard); }
+  .editor-actions { display: flex; justify-content: flex-end; gap: 14px; }
+
+  @media (max-width: 560px) {
+    .editor { width: 100vw; max-width: 100vw; max-height: 100dvh; height: 100dvh; margin: 0; border-width: 0; box-shadow: none; }
+    .editor-form { max-height: 100dvh; height: 100%; }
+    .ef-row { grid-template-columns: 1fr; }
+    .ef-row.three { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .editor-actions .bauhaus-btn { flex: 1; }
+    .ef-check.kid { margin-left: 0; }
+  }
+</style>
+
+<script>
+(function () {
+  var C = window.Chowdown;
+  var SLUG = {{ _edit_slug | jsonify }};
+  var WORKFLOW = 'update-recipe.yml';
+
+  var ORIGINAL = {
+    title: {{ page.title | jsonify }},
+    ingredients: {{ page.ingredients | jsonify }},
+    directions: {{ page.directions | jsonify }},
+    prep_time: {{ page.prep_time | jsonify }},
+    cook_time: {{ page.cook_time | jsonify }},
+    total_time: {{ page.total_time | jsonify }},
+    yield: {{ page.yield | jsonify }},
+    difficulty: {{ page.difficulty | jsonify }},
+    kid_friendly: {{ page.kid_friendly | jsonify }},
+    season: {{ page.season | jsonify }},
+    tags: {{ page.tags | jsonify }},
+    category: {{ page.category | jsonify }},
+    cuisine: {{ page.cuisine | jsonify }}
+  };
+
+  var dialog = document.getElementById('recipe-editor');
+  var form = document.getElementById('editor-form');
+  var statusEl = document.getElementById('editor-status');
+  var saveBtn = document.getElementById('editor-save');
+  var initial = {};
+
+  function asList(v) {
+    if (Array.isArray(v)) return v.map(String);
+    if (typeof v === 'string' && v.trim()) return v.split(',');
+    return [];
+  }
+  function str(v) { return v === null || v === undefined ? '' : String(v); }
+  function lines(text) {
+    return text.split('\n').map(function (l) { return l.trim(); }).filter(Boolean);
+  }
+  function same(a, b) { return JSON.stringify(a) === JSON.stringify(b); }
+
+  function status(html, cls) {
+    statusEl.hidden = !html;
+    statusEl.innerHTML = html || '';
+    statusEl.className = 'action-status editor-status' + (cls ? ' ' + cls : '');
+  }
+
+  function seasonBoxes() { return Array.prototype.slice.call(form.querySelectorAll('input[name="season"]')); }
+
+  // Current form contents in the same shape update_recipe.py takes
+  function read() {
+    var f = form.elements;
+    return {
+      title: f.title.value.trim(),
+      ingredients: lines(f.ingredients.value),
+      directions: lines(f.directions.value),
+      prep_time: f.prep_time.value.trim(),
+      cook_time: f.cook_time.value.trim(),
+      total_time: f.total_time.value.trim(),
+      yield: f.yield.value.trim(),
+      difficulty: f.difficulty.value,
+      kid_friendly: f.kid_friendly.checked,
+      season: seasonBoxes().filter(function (b) { return b.checked; }).map(function (b) { return b.value; }),
+      tags: f.tags.value.split(',').map(function (t) { return t.trim(); }).filter(Boolean),
+      category: f.category.value.trim(),
+      cuisine: f.cuisine.value.trim()
+    };
+  }
+
+  function fill() {
+    var f = form.elements;
+    f.title.value = str(ORIGINAL.title);
+    f.ingredients.value = asList(ORIGINAL.ingredients).join('\n');
+    f.directions.value = asList(ORIGINAL.directions).join('\n');
+    f.prep_time.value = str(ORIGINAL.prep_time);
+    f.cook_time.value = str(ORIGINAL.cook_time);
+    f.total_time.value = str(ORIGINAL.total_time);
+    f.yield.value = str(ORIGINAL.yield);
+    f.difficulty.value = str(ORIGINAL.difficulty);
+    f.kid_friendly.checked = ORIGINAL.kid_friendly === true || ORIGINAL.kid_friendly === 'true';
+    var seasons = asList(ORIGINAL.season);
+    if (!seasons.length) seasons = ['all'];
+    seasonBoxes().forEach(function (b) { b.checked = seasons.indexOf(b.value) !== -1; });
+    f.tags.value = asList(ORIGINAL.tags).map(function (t) { return t.trim(); }).join(', ');
+    f.category.value = str(ORIGINAL.category);
+    f.cuisine.value = str(ORIGINAL.cuisine);
+    initial = read();
+  }
+
+  // Only what the person actually changed, so untouched fields are never rewritten
+  function changes() {
+    var now = read(), out = {};
+    Object.keys(now).forEach(function (k) {
+      if (!same(now[k], initial[k])) out[k] = now[k];
+    });
+    return out;
+  }
+
+  function open() {
+    fill();
+    status('');
+    saveBtn.disabled = false;
+    if (dialog.showModal) dialog.showModal(); else dialog.setAttribute('open', '');
+    form.elements.title.focus();
+  }
+
+  function close() {
+    if (dialog.close) dialog.close(); else dialog.removeAttribute('open');
+  }
+
+  document.getElementById('edit-btn').addEventListener('click', open);
+  document.getElementById('editor-close').addEventListener('click', close);
+  document.getElementById('editor-cancel').addEventListener('click', close);
+  // Clicking the dimmed backdrop closes it too
+  dialog.addEventListener('mousedown', function (e) { if (e.target === dialog) close(); });
+
+  // "All" and the individual seasons are alternatives
+  seasonBoxes().forEach(function (box) {
+    box.addEventListener('change', function () {
+      if (!box.checked) return;
+      seasonBoxes().forEach(function (other) {
+        if (other !== box && (box.value === 'all' || other.value === 'all')) other.checked = false;
+      });
+    });
+  });
+
+  function problem(c) {
+    if ('title' in c && !c.title) return 'The title can’t be empty.';
+    if ('ingredients' in c && !c.ingredients.length) return 'Add at least one ingredient.';
+    if ('directions' in c && !c.directions.length) return 'Add at least one step.';
+    var bad = ['prep_time', 'cook_time', 'total_time'].filter(function (k) { return k in c && c[k] && !/^\d{1,4}$/.test(c[k]); });
+    if (bad.length) return 'Times need to be whole numbers of minutes.';
+    return '';
+  }
+
+  var link = function (href, text) { return '<a href="' + href + '" target="_blank" rel="noopener">' + text + '</a>'; };
+
+  // Follow the run so a rejected edit is reported here instead of silently
+  async function watchRun(startedAt) {
+    var base = 'https://api.github.com/repos/' + C.REPO + '/actions/workflows/' + WORKFLOW + '/runs';
+    var runsUrl = 'https://github.com/' + C.REPO + '/actions/workflows/' + WORKFLOW;
+    try {
+      for (var i = 0; i < 30; i++) {                       // ~2.5 minutes
+        await new Promise(function (r) { setTimeout(r, i < 3 ? 3000 : 5000); });
+        var resp = await fetch(base + '?event=workflow_dispatch&per_page=10', {
+          headers: { 'Authorization': 'token ' + C.token(), 'Accept': 'application/vnd.github.v3+json' }
+        });
+        if (!resp.ok) break;
+        var runs = (await resp.json()).workflow_runs || [];
+        var run = runs.filter(function (r) { return new Date(r.created_at).getTime() >= startedAt; })
+                      .sort(function (a, b) { return new Date(a.created_at) - new Date(b.created_at); })[0];
+        if (!run) continue;
+        if (run.status !== 'completed') { status('Saving… ' + link(run.html_url, 'watch live')); continue; }
+        return { ok: run.conclusion === 'success', url: run.html_url };
+      }
+    } catch (e) { /* fall through */ }
+    return { ok: null, url: runsUrl };
+  }
+
+  form.addEventListener('submit', async function (e) {
+    e.preventDefault();
+    var c = changes();
+    if (!Object.keys(c).length) { status('Nothing changed.'); return; }
+    var p = problem(c);
+    if (p) { status(p, 'err'); return; }
+
+    saveBtn.disabled = true;
+    status('Saving…');
+    var startedAt = Date.now() - 5000;
+    try {
+      await C.triggerWorkflow(WORKFLOW, { slug: SLUG, changes: JSON.stringify(c) });
+    } catch (err) {
+      status(err.message, 'err');
+      saveBtn.disabled = false;
+      return;
+    }
+
+    var run = await watchRun(startedAt);
+    if (run.ok === false) {
+      status('✗ Couldn’t save — ' + link(run.url, 'see why') + '. Your edits are still here.', 'err');
+      saveBtn.disabled = false;
+      return;
+    }
+    close();
+    C.toast(run.ok
+      ? '✓ Saved — the site rebuilds in about a minute. Reload to see your changes.'
+      : 'Edit sent — ' + link(run.url, 'check progress on GitHub'), 'ok', 7000);
+  });
+})();
+</script>

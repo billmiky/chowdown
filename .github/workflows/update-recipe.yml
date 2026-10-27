@@ -1,0 +1,55 @@
+name: Update Recipe
+
+on:
+  workflow_dispatch:
+    inputs:
+      slug:
+        description: "Recipe slug (filename without .md)"
+        required: true
+      changes:
+        description: "JSON object of the fields to change (see tools/update_recipe.py)"
+        required: true
+
+jobs:
+  update-recipe:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install pyyaml
+
+      # Runs can overlap, so re-apply the change on top of the latest main and retry
+      # if another run pushed first (same approach as the meal plan workflows).
+      - name: Update recipe and push
+        run: |
+          set -e
+          for attempt in 1 2 3 4 5 6; do
+            git fetch origin main
+            git reset --hard origin/main
+            python tools/update_recipe.py "$SLUG" "$CHANGES"
+            python tools/validate_recipes.py "_recipes/$SLUG.md"
+            git add "_recipes/$SLUG.md"
+            if git diff --cached --quiet; then
+              echo "No changes to commit"
+              exit 0
+            fi
+            git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" commit -m "Edit $SLUG"
+            if git push origin HEAD:main; then
+              exit 0
+            fi
+            echo "Push rejected (another run pushed first), retrying on the latest main"
+            sleep $((RANDOM % 5 + 2))
+          done
+          echo "Could not push after several attempts"
+          exit 1
+        env:
+          SLUG: ${{ inputs.slug }}
+          CHANGES: ${{ inputs.changes }}
