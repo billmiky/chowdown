@@ -1,28 +1,72 @@
 categories:
-  - items:
-      - 1/3 cup fish sauce
-    name: Meat & Fish
-  - have:
-      - 1/4 cup rice vinegar
-      - Cooked white rice (optional), for serving
-    name: Grains & Bread
-  - have:
-      - 1 teaspoon sugar
-    items:
-      - 4 tablespoons neutral oil (such as vegetable, canola or peanut)
-    name: Pantry & Staples
-  - have:
-      - 1/4 small red onion, halved and thinly sliced
-    items:
-      - 2 heads cauliflower, stems removed, sliced vertically about ½-inch thick
-      - 3 garlic cloves (optional), finely chopped
-      - 2 tablespoons chopped cilantro
-    name: Produce
-  - items:
-      - 4 to 6 Thai green chiles, thinly sliced (with or without seeds)
-      - 2 tablespoons crushed roasted peanuts or other nuts
-    name: Other
-  - name: Pantry Needs
-    items:
-      - lemon
-week_of: '2026-10-25'
+- items:
+  - 1 1/2 pounds boneless, skinless chicken thighs
+  - 1 pound ground beef (round or chuck)
+  - 1/3 cup fish sauce
+  - 2 cups vegetable or chicken stock
+  name: Meat & Fish
+- items:
+  - 1 pound (about ½ small) butternut squash, peeled, seeded and diced in 1-inch pieces
+  - 2 (15-ounce) cans full-fat coconut milk
+  - Yogurt, for serving (optional)
+  name: Dairy & Eggs
+- have:
+  - 1/2 cup finely crushed Ritz crackers (12 crackers)
+  - 2 tightly packed cups leftover medium- or long-grain rice (preferably refrigerated)
+  - 1/4 cup rice vinegar
+  - Cooked white rice (optional), for serving
+  items:
+  - Warmed tortillas, for serving
+  - Toasted pita, lavash or other flatbread, for serving (optional)
+  name: Grains & Bread
+- items:
+  - 1 to 4 canned chipotles in adobo, finely chopped, plus 2 tablespoons adobo sauce
+  - 1 (15-ounce) can black beans, rinsed and drained
+  - 6 cups vegetable stock
+  - 2 (15-ounce) cans chickpeas, drained and rinsed
+  name: Canned & Jarred
+- have:
+  - 1 teaspoon kosher salt, plus additional as needed
+  - 1/2 teaspoon ground cumin
+  - 2 tablespoons low-sodium soy sauce
+  - 1 teaspoon kosher salt (such as Diamond Crystal)
+  - 1 teaspoon freshly ground black pepper
+  - 4 tablespoons neutral oil (such as vegetable, canola or peanut)
+  - 1 teaspoon sugar
+  - 1/4 cup olive oil, plus more for serving
+  - Kosher salt and black pepper
+  - 1 teaspoon red-pepper flakes, plus more for serving
+  items:
+  - 3 tablespoons honey
+  - 1 teaspoon onion powder
+  - 1 teaspoon garlic powder
+  - 1 tablespoon neutral oil (such as canola)
+  - Chile oil or chile crisp, for serving
+  - 1 1/2 teaspoons ground turmeric, plus more for serving
+  name: Pantry & Staples
+- have:
+  - Sliced or cubed avocado, for serving
+  - 1/4 small red onion, halved and thinly sliced
+  - 1 bunch Swiss chard, kale or collard greens, stems removed, torn into bite-size
+    pieces
+  items:
+  - 1 lime, juiced
+  - Pickled onion, for serving (see Tip)
+  - 1/2 cup chopped scallions
+  - 2 tablespoons minced garlic
+  - 4 garlic cloves, peeled and crushed
+  - 2 scallions, finely sliced
+  - 2 heads cauliflower, stems removed, sliced vertically about ½-inch thick
+  - 3 garlic cloves (optional), finely chopped
+  - 2 tablespoons chopped cilantro
+  - 4 garlic cloves, chopped
+  - 1 large yellow onion, chopped
+  - 1 (2-inch) piece ginger, finely chopped
+  - 1 cup mint leaves, for serving
+  name: Produce
+- items:
+  - 1 small piece kombu (optional)
+  - 4 to 6 Thai green chiles, thinly sliced (with or without seeds)
+  - 2 tablespoons crushed roasted peanuts or other nuts
+  name: Other
+week_of: '2026-10-27'
