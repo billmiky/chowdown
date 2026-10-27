@@ -23,9 +23,11 @@ jobs:
       - name: Install dependencies
         run: pip install pyyaml
 
-      - name: Clear day from meal plan
+      # Each click in the UI starts its own run and runs overlap. Re-apply the change on
+      # top of the latest main and retry, so a concurrent push can't drop it.
+      - name: Clear day from meal plan and push
         run: |
-          python - <<'EOF'
+          cat > "$RUNNER_TEMP/apply.py" <<'EOF'
           import yaml, os
           from pathlib import Path
 
@@ -44,10 +46,24 @@ jobs:
           plan_path.write_text(yaml.dump(plan, default_flow_style=False, sort_keys=False), encoding="utf-8")
           print(f"Cleared {day} from meal plan")
           EOF
+
+          for attempt in 1 2 3 4 5 6; do
+            git fetch origin main
+            git reset --hard origin/main
+            python "$RUNNER_TEMP/apply.py"
+            git add _data/meal_plan.yml
+            if git diff --cached --quiet; then
+              echo "No changes to commit"
+              exit 0
+            fi
+            git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" commit -m "Plan: remove $DAY"
+            if git push origin HEAD:main; then
+              exit 0
+            fi
+            echo "Push rejected (another run pushed first), retrying on the latest main"
+            sleep $((RANDOM % 5 + 2))
+          done
+          echo "Could not push after several attempts"
+          exit 1
         env:
           DAY: ${{ inputs.day }}
-
-      - uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          commit_message: "Plan: remove ${{ inputs.day }}"
-          file_pattern: "_data/meal_plan.yml"

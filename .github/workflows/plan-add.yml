@@ -26,9 +26,11 @@ jobs:
       - name: Install dependencies
         run: pip install pyyaml
 
-      - name: Add recipe to current week
+      # Each click in the UI starts its own run and runs overlap. Re-apply the change on
+      # top of the latest main and retry, so a concurrent push can't drop it.
+      - name: Add recipe to current week and push
         run: |
-          python - <<'EOF'
+          cat > "$RUNNER_TEMP/apply.py" <<'EOF'
           import yaml, os
           from datetime import date, timedelta
           from pathlib import Path
@@ -65,12 +67,26 @@ jobs:
           plan_path.parent.mkdir(exist_ok=True)
           plan_path.write_text(yaml.dump(plan, default_flow_style=False, sort_keys=False), encoding="utf-8")
           EOF
+
+          for attempt in 1 2 3 4 5 6; do
+            git fetch origin main
+            git reset --hard origin/main
+            python "$RUNNER_TEMP/apply.py"
+            git add _data/meal_plan.yml
+            if git diff --cached --quiet; then
+              echo "No changes to commit"
+              exit 0
+            fi
+            git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" commit -m "Plan: add $SLUG to this week"
+            if git push origin HEAD:main; then
+              exit 0
+            fi
+            echo "Push rejected (another run pushed first), retrying on the latest main"
+            sleep $((RANDOM % 5 + 2))
+          done
+          echo "Could not push after several attempts"
+          exit 1
         env:
           SLUG: ${{ inputs.slug }}
           DAY: ${{ inputs.day }}
           TZ: America/New_York
-
-      - uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          commit_message: "Plan: add ${{ inputs.slug }} to this week"
-          file_pattern: "_data/meal_plan.yml"
