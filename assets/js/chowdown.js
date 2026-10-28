@@ -21,6 +21,88 @@ window.Chowdown = (function () {
     try { return localStorage.getItem('gh_pat') || ''; } catch (e) { return ''; }
   }
 
+  /* ---- Token sync across devices ----
+     The token is encrypted in the browser with a passphrase (PBKDF2 -> AES-GCM) and the
+     ciphertext is committed to .sync/token.json. A new device only needs the passphrase:
+     it fetches the ciphertext and decrypts it locally. The passphrase never leaves the
+     browser. The file is public, so the passphrase should be strong. */
+  var SYNC_FILE = '.sync/token.json';
+  var SYNC_ITER = 310000;
+
+  function b64(buf) {
+    var s = '', b = new Uint8Array(buf);
+    for (var i = 0; i < b.length; i++) s += String.fromCharCode(b[i]);
+    return btoa(s);
+  }
+  function unb64(str) {
+    var s = atob(str), b = new Uint8Array(s.length);
+    for (var i = 0; i < s.length; i++) b[i] = s.charCodeAt(i);
+    return b;
+  }
+  async function deriveKey(pass, salt, iter) {
+    var base = await crypto.subtle.importKey('raw', new TextEncoder().encode(pass), 'PBKDF2', false, ['deriveKey']);
+    return crypto.subtle.deriveKey(
+      { name: 'PBKDF2', salt: salt, iterations: iter, hash: 'SHA-256' },
+      base, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']
+    );
+  }
+  async function encryptToken(pass, plain) {
+    var salt = crypto.getRandomValues(new Uint8Array(16));
+    var iv = crypto.getRandomValues(new Uint8Array(12));
+    var key = await deriveKey(pass, salt, SYNC_ITER);
+    var ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv: iv }, key, new TextEncoder().encode(plain));
+    return { v: 1, iter: SYNC_ITER, salt: b64(salt), iv: b64(iv), ct: b64(ct) };
+  }
+  async function decryptToken(pass, blob) {
+    var key = await deriveKey(pass, unb64(blob.salt), blob.iter);
+    try {
+      var pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: unb64(blob.iv) }, key, unb64(blob.ct));
+      return new TextDecoder().decode(pt);
+    } catch (e) { throw new Error('Wrong passphrase'); }
+  }
+
+  /* Encrypts the saved token and commits it to the repo (needs Contents: write). */
+  async function uploadSyncedToken(pass) {
+    var t = token();
+    if (!t) throw new Error('Save a token on this device first');
+    var url = 'https://api.github.com/repos/' + REPO + '/contents/' + SYNC_FILE;
+    var headers = { 'Authorization': 'token ' + t, 'Accept': 'application/vnd.github.v3+json', 'Content-Type': 'application/json' };
+    var blob = await encryptToken(pass, t);
+    var sha;
+    var cur = await fetch(url + '?ref=' + BRANCH, { headers: headers, cache: 'no-store' });
+    if (cur.ok) sha = (await cur.json()).sha;
+    else if (cur.status !== 404) throw new Error(cur.status === 401 ? 'GitHub token was rejected' : 'HTTP ' + cur.status);
+    var resp = await fetch(url, {
+      method: 'PUT',
+      headers: headers,
+      body: JSON.stringify({
+        message: 'Update synced token',
+        branch: BRANCH,
+        sha: sha,
+        content: btoa(JSON.stringify(blob)),
+      }),
+    });
+    if (!resp.ok) {
+      var body = {};
+      try { body = await resp.json(); } catch (e) {}
+      if (resp.status === 403 || resp.status === 404) throw new Error('Token needs Contents: Read and write on ' + REPO);
+      throw new Error(body.message || ('HTTP ' + resp.status));
+    }
+  }
+
+  /* Fetches the ciphertext, decrypts it and stores it as this device's token. */
+  async function fetchSyncedToken(pass) {
+    var resp = await fetch(
+      'https://api.github.com/repos/' + REPO + '/contents/' + SYNC_FILE + '?ref=' + BRANCH + '&t=' + Date.now(),
+      { headers: { 'Accept': 'application/vnd.github.raw+json' }, cache: 'no-store' }
+    );
+    if (resp.status === 404) throw new Error('No synced token yet — upload one from a device that has it');
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    var t = await decryptToken(pass, await resp.json());
+    try { localStorage.setItem('gh_pat', t); } catch (e) {}
+    return t;
+  }
+
   /* ---- GitHub Actions dispatch ---- */
   async function triggerWorkflow(workflow, inputs) {
     var t = token();
@@ -138,6 +220,8 @@ window.Chowdown = (function () {
     load: load,
     save: save,
     token: token,
+    uploadSyncedToken: uploadSyncedToken,
+    fetchSyncedToken: fetchSyncedToken,
     triggerWorkflow: triggerWorkflow,
     parseDate: parseDate,
     daysSince: daysSince,

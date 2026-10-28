@@ -111,6 +111,8 @@ permalink: /import/
   .pat-row input { flex: 1 1 240px; }
   .pat-help { font-size: 0.82rem; color: var(--muted); margin: 12px 0 0; }
   .pat-help a { color: var(--ink); font-weight: 700; }
+  .pat-sync { margin-top: 18px; padding-top: 16px; border-top: 2px solid var(--ink); }
+  .pat-sync label { display: block; margin-bottom: 8px; }
 
   .workflow-note {
     font-size: 0.82rem;
@@ -157,6 +159,20 @@ permalink: /import/
             (or <em>Actions: write</em> + <em>Contents: write</em> for fine-grained tokens).
             <a href="https://github.com/settings/tokens" target="_blank" rel="noopener">Create one →</a>
           </p>
+          <div class="pat-sync">
+            <label for="sync-pass"><strong>Sync across devices</strong></label>
+            <div class="pat-row">
+              <input type="password" id="sync-pass" placeholder="Sync passphrase" autocomplete="off" spellcheck="false" />
+              <button class="bauhaus-btn small" type="button" id="sync-up">Upload token</button>
+              <button class="bauhaus-btn ghost small" type="button" id="sync-down">Fetch token</button>
+            </div>
+            <p class="action-status" id="sync-status" role="status"></p>
+            <p class="pat-help">
+              Encrypts your token with this passphrase in your browser and stores the ciphertext in the repo.
+              On a new device, enter the same passphrase and tap <em>Fetch token</em> instead of pasting a token.
+              The passphrase is never stored or sent anywhere, so make it a long one; the encrypted file is public.
+            </p>
+          </div>
         </div>
       </details>
 
@@ -288,6 +304,27 @@ permalink: /import/
     status(patStatus, 'Token removed from this browser');
     refreshTokenState();
   });
+
+  var syncPass = document.getElementById('sync-pass');
+  var syncStatus = document.getElementById('sync-status');
+  function syncAction(btn, busy, fn, done) {
+    btn.addEventListener('click', async function () {
+      var pass = syncPass.value;
+      if (pass.length < 8) { status(syncStatus, 'Use a passphrase of at least 8 characters', 'err'); return; }
+      status(syncStatus, busy);
+      try {
+        await fn(pass);
+        syncPass.value = '';
+        status(syncStatus, done, 'ok');
+        refreshTokenState();
+        section.open = true;
+      } catch (e) {
+        status(syncStatus, '✗ ' + C.escapeHtml(e.message), 'err');
+      }
+    });
+  }
+  syncAction(document.getElementById('sync-up'), 'Encrypting and uploading…', C.uploadSyncedToken, '✓ Token uploaded. Use this passphrase on your other devices');
+  syncAction(document.getElementById('sync-down'), 'Fetching token…', C.fetchSyncedToken, '✓ Token fetched and saved on this device');
 
   var pasteBtn = document.getElementById('paste-btn');
   if (!navigator.clipboard || !navigator.clipboard.readText) pasteBtn.hidden = true;

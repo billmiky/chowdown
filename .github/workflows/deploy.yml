@@ -5,6 +5,9 @@ on:
   # Runs on pushes targeting the default branch
   push:
     branches: ["main", "master"]
+    # the encrypted synced token is read straight from the repo, no rebuild needed
+    paths-ignore:
+      - ".sync/**"
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
