@@ -1,8 +1,8 @@
 # Site settings
-title: Chowdown
+title: Mise
 email: your-email@domain.com
-description: The plain text recipe database for hackers
-baseurl: "/chowdown"
+description: Our recipes, weekly meal plan, grocery list and pantry
+baseurl: "/mise"
 language: "en"
 lang_direction: "ltr"
 color: "#F53200"
