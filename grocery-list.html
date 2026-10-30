@@ -162,6 +162,75 @@ permalink: /grocery-list/
     color: var(--easy);
     margin-left: auto;
   }
+
+  /* ---- Add an item ---- */
+  .add-item {
+    display: flex;
+    gap: 10px;
+    max-width: 680px;
+    margin-bottom: 8px;
+  }
+
+  .add-item input {
+    flex: 1;
+    min-width: 0;
+    font: inherit;
+    font-size: 1rem;
+    font-weight: 500;
+    padding: 10px 14px;
+    border: var(--border);
+    background: var(--card);
+    color: var(--ink);
+    border-radius: 0;
+  }
+
+  .add-item input:focus { outline: 3px solid var(--red); outline-offset: 0; }
+
+  /* ---- Item rows ---- */
+  .grocery-list li { display: flex; align-items: center; gap: 6px; }
+  .grocery-list li > label { flex: 1; min-width: 0; }
+  .grocery-list li.pending { opacity: 0.4; pointer-events: none; }
+
+  .item-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+
+  .item-uses {
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--muted);
+    line-height: 1.35;
+  }
+
+  .item-uses span { display: block; }
+  .item-uses em { font-style: normal; color: var(--faint); }
+
+  .grocery-list li.checked .item-uses { color: #c4beb4; }
+
+  .item-x, .need-btn {
+    flex-shrink: 0;
+    background: none;
+    border: 2px solid transparent;
+    color: var(--faint);
+    cursor: pointer;
+    font: inherit;
+  }
+
+  .item-x { width: 36px; height: 36px; font-size: 0.85rem; font-weight: 900; }
+  .item-x:hover { color: var(--hard); border-color: currentColor; }
+
+  .need-btn {
+    font-size: 0.62rem;
+    font-weight: 900;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink);
+    border-color: var(--ink);
+    padding: 4px 8px;
+    margin-left: auto;
+  }
+
+  .need-btn:hover { background: var(--ink); color: #fff; }
+
+  .on-hand-list li > .item-body { flex: 1; }
 </style>
 
 <div class="bauhaus-home-layout">
@@ -185,111 +254,124 @@ permalink: /grocery-list/
     </div>
     <p class="action-status" id="rebuild-status" role="status"></p>
 
-    <div class="grocery-wrap" id="grocery" data-week="{{ list.week_of }}">
-    {% if list.categories and list.categories.size > 0 %}
-      {% assign total_have = 0 %}
-      {% for cat in list.categories %}{% assign total_have = total_have | plus: cat.have.size %}{% endfor %}
+    <form class="add-item" id="add-form" autocomplete="off">
+      <label for="add-input" class="sr-only">Add an item</label>
+      <input type="text" id="add-input" placeholder="Add an item, e.g. paper towels" enterkeyhint="done">
+      <button class="bauhaus-btn" type="submit" id="add-btn">Add</button>
+    </form>
 
-      <div class="grocery-progress" id="progress">
-        <span class="progress-text" id="progress-text"></span>
-        <div class="progress-bar" aria-hidden="true"><div class="progress-fill" id="progress-fill"></div></div>
-        <div class="progress-actions">
-          <button class="bauhaus-btn ghost small" type="button" id="copy-btn">Copy remaining</button>
-          <button class="bauhaus-btn ghost small" type="button" id="reset-btn">Uncheck all</button>
-        </div>
-      </div>
-
-      {% for cat in list.categories %}
-        {% assign has_items = false %}
-        {% if cat.items and cat.items.size > 0 %}{% assign has_items = true %}{% endif %}
-        {% if cat.have and cat.have.size > 0 %}{% assign has_items = true %}{% endif %}
-        {% if has_items %}
-          <section class="grocery-category">
-            <div class="category-header">
-              <span class="category-name">{{ cat.name }}</span>
-              {% if cat.items and cat.items.size > 0 %}<span class="category-count">{{ cat.items.size }}</span>{% endif %}
-              {% if cat.have and cat.have.size > 0 %}<span class="category-have-count">{{ cat.have.size }} on hand</span>{% endif %}
-            </div>
-            {% if cat.items and cat.items.size > 0 %}
-            <ul class="grocery-list">
-              {% for item in cat.items %}
-                <li><label><input type="checkbox"><span class="item-text">{{ item }}</span></label></li>
-              {% endfor %}
-            </ul>
-            {% endif %}
-            {% if cat.have and cat.have.size > 0 %}
-            <ul class="grocery-list on-hand-list">
-              {% for item in cat.have %}
-                <li><span class="on-hand-icon" aria-hidden="true">✓</span><span>{{ item }}</span><span class="on-hand-note">Have it</span></li>
-              {% endfor %}
-            </ul>
-            {% endif %}
-          </section>
-        {% endif %}
-      {% endfor %}
-
-    {% elsif list.recipes and list.recipes.size > 0 %}
-      <div class="grocery-progress" id="progress">
-        <span class="progress-text" id="progress-text"></span>
-        <div class="progress-bar" aria-hidden="true"><div class="progress-fill" id="progress-fill"></div></div>
-        <div class="progress-actions">
-          <button class="bauhaus-btn ghost small" type="button" id="copy-btn">Copy remaining</button>
-          <button class="bauhaus-btn ghost small" type="button" id="reset-btn">Uncheck all</button>
-        </div>
-      </div>
-      {% for group in list.recipes %}
-        {% if group.items and group.items.size > 0 %}
-          <section class="grocery-category">
-            <div class="category-header">
-              <span class="category-name">{{ group.recipe }}</span>
-              <span class="category-count">{{ group.items.size }}</span>
-            </div>
-            <ul class="grocery-list">
-              {% for item in group.items %}
-                <li><label><input type="checkbox"><span class="item-text">{{ item }}</span></label></li>
-              {% endfor %}
-            </ul>
-          </section>
-        {% endif %}
-      {% endfor %}
-
-    {% elsif list.items and list.items.size > 0 %}
-      <div class="grocery-progress" id="progress">
-        <span class="progress-text" id="progress-text"></span>
-        <div class="progress-bar" aria-hidden="true"><div class="progress-fill" id="progress-fill"></div></div>
-        <div class="progress-actions">
-          <button class="bauhaus-btn ghost small" type="button" id="copy-btn">Copy remaining</button>
-          <button class="bauhaus-btn ghost small" type="button" id="reset-btn">Uncheck all</button>
-        </div>
-      </div>
-      <section class="grocery-category">
-        <ul class="grocery-list">
-          {% for item in list.items %}
-            <li><label><input type="checkbox"><span class="item-text">{{ item }}</span></label></li>
-          {% endfor %}
-        </ul>
-      </section>
-
-    {% else %}
-      <div class="empty-state">No grocery list yet &mdash; build one from the <a href="{{ '/meal-plan/' | relative_url }}">meal plan</a>.</div>
-    {% endif %}
-    </div>
+    <div class="grocery-wrap" id="grocery"></div>
 
     <p class="edit-hint">
-      Checkmarks are saved on this device. Hit &ldquo;Rebuild&rdquo; to regenerate from this week&rsquo;s plan, or &ldquo;Clear List&rdquo; to start from scratch.
+      Checkmarks are saved on this device. &ldquo;Rebuild from Plan&rdquo; regenerates the list from this week&rsquo;s plan and keeps anything you added yourself.
     </p>
 
   </main>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
 <script>
 (function () {
   var C = window.Chowdown;
-  var root = document.getElementById('grocery');
-  var KEY = 'grocery-checked:' + (root.dataset.week || 'current');
   var LIST_PATH = '_data/grocery_list.yml';
+  var EXTRAS = 'Extras';
+  var root = document.getElementById('grocery');
   var clearBtn = document.getElementById('clear-btn');
+  var statusEl = document.getElementById('rebuild-status');
+
+  // The list as built with the site; replaced by the latest copy from GitHub when we can read it
+  var list = normalize({{ list | jsonify }});
   var boxes = [];
+
+  /* ---- Data ---- */
+
+  // Older lists group items by recipe or are a flat list; show them as sections too
+  function normalize(data) {
+    data = data || {};
+    if (!data.categories && data.recipes) {
+      data.categories = data.recipes.map(function (g) { return { name: g.recipe, items: g.items }; });
+      delete data.recipes;
+    } else if (!data.categories && data.items) {
+      data.categories = [{ name: 'Items', items: data.items }];
+      delete data.items;
+    }
+    data.categories = data.categories || [];
+    if (data.week_of instanceof Date) data.week_of = data.week_of.toISOString().slice(0, 10);
+    return data;
+  }
+
+  function uses(item) {
+    return typeof item === 'string' ? [{ text: item }] : (item.uses || []);
+  }
+
+  // What the row says: the ingredient line itself, or the item name when several recipes need it
+  function label(item) {
+    if (typeof item === 'string') return item;
+    var u = uses(item);
+    return u.length === 1 ? u[0].text : item.name;
+  }
+
+  function weekKey() { return 'grocery-checked:' + (list.week_of || 'current'); }
+
+  function esc(s) { return C.escapeHtml(String(s == null ? '' : s)); }
+
+  /* ---- Rendering ---- */
+
+  function usesHtml(item) {
+    var u = uses(item);
+    if (u.length === 1) return u[0].recipe ? '<span class="item-uses"><em>for</em> ' + esc(u[0].recipe) + '</span>' : '';
+    return '<span class="item-uses">' + u.map(function (x) {
+      return '<span>' + esc(x.text) + (x.recipe ? ' <em>· ' + esc(x.recipe) + '</em>' : '') + '</span>';
+    }).join('') + '</span>';
+  }
+
+  function render() {
+    var buyCount = 0;
+    var html = list.categories.map(function (cat, ci) {
+      var items = cat.items || [], have = cat.have || [];
+      if (!items.length && !have.length) return '';
+      buyCount += items.length;
+      var out = '<section class="grocery-category"><div class="category-header">' +
+        '<span class="category-name">' + esc(cat.name) + '</span>' +
+        (items.length ? '<span class="category-count">' + items.length + '</span>' : '') +
+        (have.length ? '<span class="category-have-count">' + have.length + ' on hand</span>' : '') + '</div>';
+      if (items.length) {
+        out += '<ul class="grocery-list">' + items.map(function (item, ii) {
+          return '<li data-cat="' + ci + '" data-kind="items" data-idx="' + ii + '">' +
+            '<label><input type="checkbox"><span class="item-body"><span class="item-text">' + esc(label(item)) + '</span>' +
+            usesHtml(item) + '</span></label>' +
+            '<button type="button" class="item-x" data-act="remove" aria-label="Remove ' + esc(label(item)) + '" title="Remove">✕</button></li>';
+        }).join('') + '</ul>';
+      }
+      if (have.length) {
+        out += '<ul class="grocery-list on-hand-list">' + have.map(function (item, ii) {
+          return '<li data-cat="' + ci + '" data-kind="have" data-idx="' + ii + '">' +
+            '<span class="on-hand-icon" aria-hidden="true">✓</span>' +
+            '<span class="item-body"><span>' + esc(label(item)) + '</span>' + usesHtml(item) + '</span>' +
+            '<button type="button" class="need-btn" data-act="need" title="Move to the buy list">Need it</button>' +
+            '<button type="button" class="item-x" data-act="remove" aria-label="Remove ' + esc(label(item)) + '" title="Remove">✕</button></li>';
+        }).join('') + '</ul>';
+      }
+      return out + '</section>';
+    }).join('');
+
+    if (!html) {
+      root.innerHTML = '<div class="empty-state">No grocery list yet &mdash; hit &ldquo;Rebuild from Plan&rdquo; or add an item above.</div>';
+    } else {
+      root.innerHTML = (buyCount ? '<div class="grocery-progress" id="progress">' +
+        '<span class="progress-text" id="progress-text"></span>' +
+        '<div class="progress-bar" aria-hidden="true"><div class="progress-fill" id="progress-fill"></div></div>' +
+        '<div class="progress-actions">' +
+        '<button class="bauhaus-btn ghost small" type="button" id="copy-btn">Copy remaining</button>' +
+        '<button class="bauhaus-btn ghost small" type="button" id="reset-btn">Uncheck all</button></div></div>' : '') + html;
+    }
+
+    boxes = Array.from(root.querySelectorAll('.grocery-list input[type="checkbox"]'));
+    var saved = new Set(C.load(weekKey(), []));
+    boxes.forEach(function (cb) { cb.checked = saved.has(itemText(cb).toLowerCase()); });
+    clearBtn.hidden = !root.querySelector('.grocery-list li');
+    update();
+  }
 
   function itemText(cb) { return cb.closest('label').querySelector('.item-text').textContent.trim(); }
 
@@ -302,8 +384,7 @@ permalink: /grocery-list/
     root.querySelectorAll('.grocery-category').forEach(function (sec) {
       var cbs = sec.querySelectorAll('input[type="checkbox"]');
       var allDone = cbs.length > 0 && Array.from(cbs).every(function (cb) { return cb.checked; });
-      var header = sec.querySelector('.category-header');
-      if (header) header.classList.toggle('all-done', allDone);
+      sec.querySelector('.category-header').classList.toggle('all-done', allDone);
     });
     var progress = document.getElementById('progress');
     if (!progress) return;
@@ -315,104 +396,196 @@ permalink: /grocery-list/
   }
 
   function persist() {
-    C.save(KEY, boxes.filter(function (cb) { return cb.checked; }).map(function (cb) { return itemText(cb).toLowerCase(); }));
+    C.save(weekKey(), boxes.filter(function (cb) { return cb.checked; }).map(function (cb) { return itemText(cb).toLowerCase(); }));
   }
 
-  function itemCount() { return root.querySelectorAll('.grocery-list li').length; }
+  /* ---- Saving ----
+     Every change re-reads the file from GitHub, applies the edit to that copy and
+     writes it back tied to its sha. If something else changed the file in between
+     (a rebuild, another phone), the write is refused and we simply try again. */
 
-  // Wire up whatever list is currently rendered in #grocery (run again after Undo restores it)
-  function init() {
-    boxes = Array.from(root.querySelectorAll('.grocery-list input[type="checkbox"]'));
-    var saved = new Set(C.load(KEY, []));
-    boxes.forEach(function (cb) {
-      cb.checked = saved.has(itemText(cb).toLowerCase());
-      cb.addEventListener('change', function () { update(); persist(); });
+  async function edit(change, message) {
+    for (var attempt = 0; ; attempt++) {
+      var file = await C.getFile(LIST_PATH);
+      var data = normalize(jsyaml.load(file.text));
+      var result = change(data);
+      if (result === false) { list = data; render(); throw new Error('That item already changed — the list has been refreshed'); }
+      if (result === 'unchanged') { list = data; return file.text; }
+      var text = jsyaml.dump(data, { lineWidth: -1, noRefs: true });
+      try {
+        await C.putFile(LIST_PATH, text, file.sha, message);
+        list = data;
+        return file.text;
+      } catch (e) {
+        if (attempt >= 2 || !/changed on GitHub/.test(e.message)) throw e;
+      }
+    }
+  }
+
+  function sameItem(a, b) { return JSON.stringify(a) === JSON.stringify(b); }
+
+  // Find the item a row shows inside a freshly loaded copy of the file
+  function locate(data, li) {
+    var cat = list.categories[+li.dataset.cat];
+    var item = cat[li.dataset.kind][+li.dataset.idx];
+    var target = data.categories.filter(function (c) { return c.name === cat.name; })[0];
+    var arr = target && target[li.dataset.kind];
+    var idx = arr ? arr.findIndex(function (x) { return sameItem(x, item); }) : -1;
+    return idx === -1 ? null : { cat: target, kind: li.dataset.kind, idx: idx, item: item };
+  }
+
+  function dropEmpty(data) {
+    data.categories = data.categories.filter(function (c) { return (c.items && c.items.length) || (c.have && c.have.length); });
+    data.categories.forEach(function (c) {
+      if (c.items && !c.items.length) delete c.items;
+      if (c.have && !c.have.length) delete c.have;
     });
+  }
 
-    var reset = document.getElementById('reset-btn');
-    if (reset) reset.addEventListener('click', function () {
+  function fail(e) { C.toast(e.message, 'err', 8000); }
+
+  root.addEventListener('change', function (e) {
+    if (e.target.matches('input[type="checkbox"]')) { update(); persist(); }
+  });
+
+  root.addEventListener('click', async function (e) {
+    var btn = e.target.closest('[data-act]');
+    if (btn) {
+      var li = btn.closest('li');
+      var name = label(list.categories[+li.dataset.cat][li.dataset.kind][+li.dataset.idx]);
+      li.classList.add('pending');
+      try {
+        if (btn.dataset.act === 'remove') {
+          await edit(function (data) {
+            var at = locate(data, li);
+            if (!at) return false;
+            at.cat[at.kind].splice(at.idx, 1);
+            dropEmpty(data);
+          }, 'Grocery: remove ' + name);
+          C.toast('Removed ' + name, 'ok');
+        } else {
+          await edit(function (data) {
+            var at = locate(data, li);
+            if (!at) return false;
+            at.cat.have.splice(at.idx, 1);
+            (at.cat.items = at.cat.items || []).push(at.item);
+            dropEmpty(data);
+          }, 'Grocery: need ' + name);
+          C.toast('Moved ' + name + ' to the buy list', 'ok');
+        }
+        render();
+      } catch (err) {
+        li.classList.remove('pending');
+        fail(err);
+      }
+      return;
+    }
+
+    if (e.target.id === 'reset-btn') {
       boxes.forEach(function (cb) { cb.checked = false; });
       update();
       persist();
-    });
-
-    var copy = document.getElementById('copy-btn');
-    if (copy) copy.addEventListener('click', async function () {
+    } else if (e.target.id === 'copy-btn') {
       var lines = [];
-      root.querySelectorAll('.grocery-category').forEach(function (sec) {
-        var left = Array.from(sec.querySelectorAll('.grocery-list:not(.on-hand-list) input'))
-          .filter(function (cb) { return !cb.checked; }).map(itemText);
+      list.categories.forEach(function (cat) {
+        var left = (cat.items || []).filter(function (item) {
+          var cb = boxes.find(function (b) { return itemText(b) === label(item).trim(); });
+          return !(cb && cb.checked);
+        });
         if (!left.length) return;
-        var name = sec.querySelector('.category-name');
-        if (name) lines.push((lines.length ? '\n' : '') + name.textContent.trim().toUpperCase());
-        left.forEach(function (t) { lines.push('- ' + t); });
+        lines.push((lines.length ? '\n' : '') + String(cat.name).toUpperCase());
+        left.forEach(function (item) {
+          var u = uses(item);
+          lines.push('- ' + (u.length > 1 ? item.name + ' (' + u.map(function (x) { return x.text; }).join('; ') + ')' : label(item)));
+        });
       });
       if (!lines.length) { C.toast('Nothing left to buy', 'ok'); return; }
       try {
         await navigator.clipboard.writeText(lines.join('\n'));
         C.toast('✓ Copied ' + lines.filter(function (l) { return l.indexOf('- ') === 0; }).length + ' items', 'ok');
-      } catch (e) {
+      } catch (err) {
         C.toast('Could not copy to clipboard', 'err');
       }
-    });
+    }
+  });
 
-    clearBtn.hidden = itemCount() === 0;
-    update();
-  }
+  /* ---- Add your own item ---- */
+  var addForm = document.getElementById('add-form');
+  var addInput = document.getElementById('add-input');
+  addForm.addEventListener('submit', async function (e) {
+    e.preventDefault();
+    var text = addInput.value.trim().replace(/\s+/g, ' ');
+    if (!text) return;
+    var btn = document.getElementById('add-btn');
+    btn.disabled = true;
+    try {
+      var added = true;
+      await edit(function (data) {
+        added = true;
+        var extras = data.categories.filter(function (c) { return c.name === EXTRAS; })[0];
+        if (!extras) { extras = { name: EXTRAS, items: [] }; data.categories.push(extras); }
+        extras.items = extras.items || [];
+        var exists = extras.items.some(function (x) { return label(x).toLowerCase() === text.toLowerCase(); });
+        if (exists) { added = false; return 'unchanged'; }
+        extras.items.push(text);
+      }, 'Grocery: add ' + text);
+      render();
+      addInput.value = '';
+      C.toast(added ? '✓ Added ' + text : text + ' is already on the list', 'ok');
+    } catch (err) {
+      fail(err);
+    } finally {
+      btn.disabled = false;
+      addInput.focus();
+    }
+  });
 
   /* ---- Clear the whole list (with Undo) ---- */
   clearBtn.addEventListener('click', async function () {
+    var buy = root.querySelectorAll('.grocery-list:not(.on-hand-list) li').length;
     var have = root.querySelectorAll('.on-hand-list li').length;
-    var question = 'Clear the grocery list? This deletes ' + boxes.length + ' item' + (boxes.length === 1 ? '' : 's') + ' to buy' +
+    var question = 'Clear the grocery list? This deletes ' + buy + ' item' + (buy === 1 ? '' : 's') + ' to buy' +
       (have ? ' and ' + have + ' on hand' : '') + '.';
     if (!window.confirm(question)) return;
 
-    var statusEl = document.getElementById('rebuild-status');
-    var before = { html: root.innerHTML, checked: C.load(KEY, []) };
+    var checked = C.load(weekKey(), []);
     clearBtn.disabled = true;
-    statusEl.className = 'action-status';
-    statusEl.textContent = 'Clearing…';
     try {
       var file = await C.getFile(LIST_PATH);
       var emptied = 'week_of: \'' + C.isoDate(new Date()) + '\'\ncategories: []\n';
       var newSha = await C.putFile(LIST_PATH, emptied, file.sha, 'Grocery: clear list');
-    } catch (e) {
-      statusEl.className = 'action-status err';
-      statusEl.innerHTML = '✗ ' + e.message;
+    } catch (err) {
       clearBtn.disabled = false;
+      fail(err);
       return;
     }
-
-    C.save(KEY, []);
-    root.innerHTML = '<div class="empty-state">List cleared. Hit &ldquo;Rebuild from Plan&rdquo; to start a new one.</div>';
-    clearBtn.hidden = true;
+    var previous = list;
+    C.save(weekKey(), []);
+    list = normalize(jsyaml.load(emptied));
+    render();
     clearBtn.disabled = false;
-    statusEl.className = 'action-status';
-    statusEl.textContent = '';
 
     var toast = C.toast('✓ Grocery list cleared <button type="button">Undo</button>', 'ok', 10000);
     toast.querySelector('button').addEventListener('click', async function () {
       this.disabled = true;
       try {
         await C.putFile(LIST_PATH, file.text, newSha, 'Grocery: undo clear');
-      } catch (e) {
+      } catch (err) {
         toast.remove();
-        C.toast('Could not undo: ' + e.message, 'err');
+        fail(new Error('Could not undo: ' + err.message));
         return;
       }
       toast.remove();
-      root.innerHTML = before.html;
-      C.save(KEY, before.checked);
-      init();
+      list = previous;
+      C.save(weekKey(), checked);
+      render();
       C.toast('✓ List restored', 'ok');
     });
   });
 
-  init();
-
+  /* ---- Rebuild from the meal plan ---- */
   document.getElementById('rebuild-btn').addEventListener('click', async function () {
     var btn = this;
-    var statusEl = document.getElementById('rebuild-status');
     btn.disabled = true;
     statusEl.className = 'action-status';
     statusEl.textContent = 'Rebuilding…';
@@ -420,12 +593,22 @@ permalink: /grocery-list/
       await C.triggerWorkflow('grocery-rebuild.yml', {});
       statusEl.className = 'action-status ok';
       statusEl.textContent = '✓ Queued — the list updates in about a minute. Reload to see it.';
-    } catch (e) {
+    } catch (err) {
       statusEl.className = 'action-status err';
-      statusEl.innerHTML = '✗ ' + e.message;
+      statusEl.innerHTML = '✗ ' + err.message;
     } finally {
       btn.disabled = false;
     }
   });
+
+  render();
+
+  // The site takes a minute to rebuild after a change, so show the latest list from GitHub when we can
+  if (C.token()) {
+    C.getFile(LIST_PATH).then(function (file) {
+      var latest = normalize(jsyaml.load(file.text));
+      if (!sameItem(latest, list)) { list = latest; render(); }
+    }).catch(function () { /* keep the built copy */ });
+  }
 })();
 </script>
