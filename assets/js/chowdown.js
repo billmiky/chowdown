@@ -1,7 +1,7 @@
 /* Chowdown — shared helpers used by every page.
    Exposes window.Chowdown. Page scripts run after this file loads. */
 window.Chowdown = (function () {
-  var REPO = 'billmiky/chowdown';
+  var REPO = 'billmiky/mise';
   var BRANCH = 'main';
   var BASE = (document.documentElement.dataset.base || '').replace(/\/$/, '');
 

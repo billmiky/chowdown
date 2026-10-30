@@ -1,8 +1,9 @@
-# Chowdown
+# Mise
 
-A simple, plaintext recipe database for hackers
+Our family's recipes, weekly meal plan, grocery list and pantry, in one site:
+[billmiky.github.io/mise](https://billmiky.github.io/mise/)
 
-[http://chowdown.io](http://chowdown.io)
+Started as a fork of [Chowdown](https://github.com/clarklab/chowdown), a plaintext recipe database for hackers.
 
 # Getting Started
 
