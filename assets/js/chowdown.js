@@ -49,6 +49,47 @@ window.Chowdown = (function () {
     throw new Error(body.message || ('HTTP ' + resp.status));
   }
 
+  /* ---- Read / write a file in the repo (GitHub Contents API) ----
+     putFile fails with a 409 if the file changed since getFile, so callers can't
+     overwrite someone else's edit by accident. */
+  function apiHeaders() {
+    var t = token();
+    if (!t) throw new Error('No GitHub token — save one on the <a href="' + BASE + '/import/">Import page</a>');
+    return { 'Authorization': 'token ' + t, 'Accept': 'application/vnd.github.v3+json' };
+  }
+
+  async function apiError(resp) {
+    var body = {};
+    try { body = await resp.json(); } catch (e) {}
+    if (resp.status === 401) return new Error('GitHub token was rejected — update it on the <a href="' + BASE + '/import/">Import page</a>');
+    if (resp.status === 409) return new Error('The file changed on GitHub — reload and try again');
+    return new Error(body.message || ('HTTP ' + resp.status));
+  }
+
+  async function getFile(path) {
+    var resp = await fetch('https://api.github.com/repos/' + REPO + '/contents/' + path + '?ref=' + BRANCH,
+      { headers: apiHeaders(), cache: 'no-store' });
+    if (!resp.ok) throw await apiError(resp);
+    var data = await resp.json();
+    var bytes = Uint8Array.from(atob(data.content.replace(/\n/g, '')), function (c) { return c.charCodeAt(0); });
+    return { text: new TextDecoder().decode(bytes), sha: data.sha };
+  }
+
+  async function putFile(path, text, sha, message) {
+    var bytes = new TextEncoder().encode(text);
+    var bin = '';
+    bytes.forEach(function (b) { bin += String.fromCharCode(b); });
+    var headers = apiHeaders();
+    headers['Content-Type'] = 'application/json';
+    var resp = await fetch('https://api.github.com/repos/' + REPO + '/contents/' + path, {
+      method: 'PUT',
+      headers: headers,
+      body: JSON.stringify({ message: message, content: btoa(bin), sha: sha, branch: BRANCH }),
+    });
+    if (!resp.ok) throw await apiError(resp);
+    return (await resp.json()).content.sha;
+  }
+
   /* ---- Dates ----
      Front matter dates are plain YYYY-MM-DD. `new Date('2026-09-21')` parses that
      as UTC midnight, which is the previous evening in US time zones, so parse the
@@ -130,6 +171,7 @@ window.Chowdown = (function () {
     el.innerHTML = html;
     toastWrap.appendChild(el);
     setTimeout(function () { el.remove(); }, ms || (kind === 'err' ? 6000 : 3500));
+    return el;
   }
 
   return {
@@ -139,6 +181,8 @@ window.Chowdown = (function () {
     save: save,
     token: token,
     triggerWorkflow: triggerWorkflow,
+    getFile: getFile,
+    putFile: putFile,
     parseDate: parseDate,
     daysSince: daysSince,
     relativeDays: relativeDays,
