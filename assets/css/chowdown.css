@@ -333,6 +333,20 @@ button, input, select, textarea { font-family: inherit; }
 .cd-toast.ok  { box-shadow: 4px 4px 0 0 var(--teal); }
 .cd-toast.err { background: var(--hard); border-color: var(--hard); box-shadow: 4px 4px 0 0 var(--ink); }
 .cd-toast a   { color: #fff; }
+.cd-toast button {
+  margin-left: 12px;
+  background: none;
+  border: 2px solid #fff;
+  color: #fff;
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 3px 10px;
+  cursor: pointer;
+}
+.cd-toast button:hover { background: #fff; color: var(--ink); }
 
 @keyframes cd-toast-in {
   from { opacity: 0; transform: translateY(8px); }
